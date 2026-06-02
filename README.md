@@ -7,8 +7,8 @@
 [![Status: Preview](https://img.shields.io/badge/status-preview%20%E2%80%94%20not%20tested-orange)](#)
 
 > [!WARNING]
-> **Preview release — not recommended for cloning yet.**
-> This is the initial public drop accompanying the FMEA @ CVPR 2026 workshop paper. The code has **not been end-to-end tested in a clean environment**, and the Hugging Face dataset / model checkpoints are still being uploaded. The **complete, verified release** is planned for **the coming weeks** — please wait for that tag if you intend to reproduce or build on the benchmark. Star or watch the repo to get notified.
+> **Preview release: not recommended for cloning yet.**
+> This is the initial public drop accompanying the FMEA @ CVPR 2026 workshop paper. The code has **not been end-to-end tested in a clean environment**, and the Hugging Face dataset / model checkpoints are still being uploaded. The **complete, verified release** is planned for **the coming weeks**. Please wait for that tag if you intend to reproduce or build on the benchmark. Star or watch the repo to get notified.
 
 Official code release for the FMEA @ CVPR 2026 paper
 **"PInVerify: An Offline Embodied Benchmark for Active Instance Verification."**
@@ -50,9 +50,9 @@ pip install -r requirements.txt --extra-index-url https://download.pytorch.org/w
 
 Optional external dependencies (install if you intend to use the corresponding baseline):
 
-- **Grounding DINO** — clone and install from [IDEA-Research/GroundingDINO](https://github.com/IDEA-Research/GroundingDINO). PInVerify calls it through `servers/run_qwen_batched.py` via an HTTP wrapper.
-- **SenseNova-SI** — clone [SenseNova/SenseNova-SI](https://github.com/SenseNova/SenseNova-SI) into `./SenseNova-SI` (or set `SENSENOVA_PATH=<dir>`).
-- **ms-swift** — required for LoRA training; install via `pip install ms-swift`.
+- **Grounding DINO**: clone and install from [IDEA-Research/GroundingDINO](https://github.com/IDEA-Research/GroundingDINO). PInVerify calls it through `servers/run_qwen_batched.py` via an HTTP wrapper.
+- **SenseNova-SI**: clone [SenseNova/SenseNova-SI](https://github.com/SenseNova/SenseNova-SI) into `./SenseNova-SI` (or set `SENSENOVA_PATH=<dir>`).
+- **ms-swift**: required for LoRA training; install via `pip install ms-swift`.
 
 ### 2. Download the dataset
 
@@ -84,11 +84,13 @@ Each fine-tuned variant lives in its own Hugging Face model repository. Overall 
 
 | Variant | HF Repo | Generic-CoT | Specific-CoT |
 |---|---|---|---|
-| SFT           | [`Avalon-S/PInVerify-Qwen3VL-4B-SFT`](https://huggingface.co/Avalon-S/PInVerify-Qwen3VL-4B-SFT)                 | 84.8 | 85.8 |
-| SFT + DPO-200 | [`Avalon-S/PInVerify-Qwen3VL-4B-SFT-DPO-200`](https://huggingface.co/Avalon-S/PInVerify-Qwen3VL-4B-SFT-DPO-200) | —    | 85.9 |
-| SFT + DPO-400 | [`Avalon-S/PInVerify-Qwen3VL-4B-SFT-DPO-400`](https://huggingface.co/Avalon-S/PInVerify-Qwen3VL-4B-SFT-DPO-400) | —    | **86.0** |
-| SFT + GRPO    | [`Avalon-S/PInVerify-Qwen3VL-4B-SFT-GRPO`](https://huggingface.co/Avalon-S/PInVerify-Qwen3VL-4B-SFT-GRPO)       | 85.3 | 85.5 |
-| **SFT + GSPO** ⭐ | [`Avalon-S/PInVerify-Qwen3VL-4B-SFT-GSPO`](https://huggingface.co/Avalon-S/PInVerify-Qwen3VL-4B-SFT-GSPO)   | **85.6** | 85.1 |
+| SFT              | TODO | 84.8     | 85.8     |
+| SFT + DPO-200    | TODO | —        | 85.9     |
+| SFT + DPO-400    | TODO | —        | **86.0** |
+| SFT + GRPO       | TODO | 85.3     | 85.5     |
+| **SFT + GSPO** ⭐ | TODO | **85.6** | 85.1     |
+
+> **TODO:** model repositories are not yet uploaded. Links will be added here once the checkpoints are public.
 
 ⭐ marks the paper's headline result. Best in each column is bolded.
 
@@ -187,4 +189,4 @@ Released under the [MIT License](LICENSE). The benchmark data inherits PInNED's 
 
 ## Contact
 
-Yuhang Jiang — [jyhtjtj@gmail.com](mailto:jyhtjtj@gmail.com) — [avalon-s.github.io](https://avalon-s.github.io/)
+Yuhang Jiang · [jyhtjtj@gmail.com](mailto:jyhtjtj@gmail.com) · [avalon-s.github.io](https://avalon-s.github.io/)
