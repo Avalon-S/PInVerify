@@ -165,15 +165,14 @@ See [docs/EVALUATION.md](docs/EVALUATION.md) and [docs/TRAINING.md](docs/TRAININ
 ## Citation
 
 ```bibtex
-@inproceedings{jiang2026pinverify,
-  title         = {PInVerify: An Offline Embodied Benchmark for Active Instance Verification},
-  author        = {Jiang, Yuhang},
-  booktitle     = {Foundation Models Meet Embodied Agents (FMEA) Workshop at CVPR},
-  year          = {2026},
-  note          = {Poster},
-  eprint        = {2605.30639},
-  archivePrefix = {arXiv},
-  primaryClass  = {cs.CV}
+@misc{jiang2026pinverifyofflineembodiedbenchmark,
+      title={PInVerify: An Offline Embodied Benchmark for Active Instance Verification},
+      author={Yuhang Jiang},
+      year={2026},
+      eprint={2605.30639},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2605.30639},
 }
 ```
 
