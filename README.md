@@ -4,6 +4,11 @@
 [![Project Page](https://img.shields.io/badge/Project-Page-blue)](https://avalon-s.github.io/PInVerify)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![FMEA @ CVPR 2026](https://img.shields.io/badge/FMEA-CVPR%202026-blueviolet)](https://github.com/Avalon-S/PInVerify)
+[![Status: Preview](https://img.shields.io/badge/status-preview%20%E2%80%94%20not%20tested-orange)](#)
+
+> [!WARNING]
+> **Preview release — not recommended for cloning yet.**
+> This is the initial public drop accompanying the FMEA @ CVPR 2026 workshop paper. The code has **not been end-to-end tested in a clean environment**, and the Hugging Face dataset / model checkpoints are still being uploaded. The **complete, verified release** is planned for **the coming weeks** — please wait for that tag if you intend to reproduce or build on the benchmark. Star or watch the repo to get notified.
 
 Official code release for the FMEA @ CVPR 2026 paper
 **"PInVerify: An Offline Embodied Benchmark for Active Instance Verification."**
