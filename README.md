@@ -4,7 +4,7 @@
 [![Project Page](https://img.shields.io/badge/Project-Page-blue)](https://avalon-s.github.io/PInVerify)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![FMEA @ CVPR 2026](https://img.shields.io/badge/FMEA-CVPR%202026-blueviolet)](https://foundation-models-meet-embodied-agents.github.io/cvpr2026/)
-[![Status: Preview](https://img.shields.io/badge/status-preview%20%E2%80%94%20not%20tested-orange)](#)
+[![Status: Preview](https://img.shields.io/badge/status-preview%3A%20not%20tested-orange)](#)
 
 > [!WARNING]
 > **Preview release: not recommended for cloning yet.**
@@ -14,6 +14,12 @@ Official code release for the FMEA @ CVPR 2026 paper
 **"PInVerify: An Offline Embodied Benchmark for Active Instance Verification."**
 
 PInVerify introduces **Active Instance Verification (AIV)**: the agent has already navigated near a candidate object and must now actively select viewpoints around it to decide whether it matches a fine-grained natural-language description. We provide a 3,000-episode offline benchmark with a 6-sector navigation topology, plus reference training-free and LoRA-fine-tuned MLLM agents.
+
+## Project Status & Collaboration
+
+This release is part of a larger effort I plan to extend toward a main-conference submission. What is public here is about 3/5 of the planned scope. Two parts are still missing: experiments on frontier MLLMs, and real-robot testing. Because of resource conflicts with my internship and other projects, I have paused this line of work for now and am releasing the part that is ready.
+
+If this direction interests you and you can offer relevant resources (compute, robot hardware, etc.), I am open for collaboration. Reach out to Yuhang Jiang at [jyhtjtj@gmail.com](mailto:jyhtjtj@gmail.com) · [avalon-s.github.io](https://avalon-s.github.io/).
 
 ---
 
@@ -185,7 +191,3 @@ PInVerify is built on top of [PInNED (Barsellotti et al., NeurIPS 2024)](https:/
 ## License
 
 Released under the [MIT License](LICENSE). The benchmark data inherits PInNED's terms; please consult its license for dataset-use conditions.
-
-## Contact
-
-Yuhang Jiang · [jyhtjtj@gmail.com](mailto:jyhtjtj@gmail.com) · [avalon-s.github.io](https://avalon-s.github.io/)
