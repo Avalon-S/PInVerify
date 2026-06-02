@@ -1,0 +1,51 @@
+# Deploys ./project-page/ to GitHub Pages.
+# Requirements: in repo Settings -> Pages, set "Source" to "GitHub Actions".
+# After that, this workflow runs automatically on every push that touches
+# project-page/** or this workflow file, and can also be triggered manually
+# from the Actions tab via "Run workflow".
+#
+# The deployed site URL will be:  https://<owner>.github.io/<repo>/
+# (e.g.,  https://avalon-s.github.io/PInVerify/)
+
+name: Deploy project page to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'project-page/**'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment; do not cancel in-progress deploys
+# so an in-flight production deploy can finish before the next one starts.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload project-page as artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: project-page
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
