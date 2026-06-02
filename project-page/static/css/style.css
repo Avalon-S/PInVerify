@@ -131,7 +131,49 @@ section:nth-child(even) {
 .hero .affiliations {
   font-size: 0.9rem;
   color: var(--gray-600);
+  margin-bottom: 0.85rem;
+}
+
+/* ---- Venue badge ---- */
+.hero .venue-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 100%;
+  gap: 0.5rem;
+  padding: 0.3rem 0.45rem 0.3rem 0.9rem;
   margin-bottom: 2rem;
+  border-radius: 50px;
+  background: var(--blue-bg);
+  border: 1px solid rgba(27, 58, 92, 0.18);
+  color: var(--blue);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: var(--transition);
+}
+.hero .venue-badge:hover {
+  background: var(--blue);
+  color: var(--white);
+  border-color: var(--blue);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+.hero .venue-badge svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+.hero .venue-badge .venue-tag {
+  padding: 0.12rem 0.6rem;
+  border-radius: 50px;
+  background: var(--red);
+  color: var(--white);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 /* ---- Buttons ---- */
