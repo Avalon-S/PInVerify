@@ -57,7 +57,7 @@ pip install -r requirements.txt --extra-index-url https://download.pytorch.org/w
 Optional external dependencies (install if you intend to use the corresponding baseline):
 
 - **Grounding DINO**: clone and install from [IDEA-Research/GroundingDINO](https://github.com/IDEA-Research/GroundingDINO). PInVerify calls it through `servers/run_qwen_batched.py` via an HTTP wrapper.
-- **SenseNova-SI**: clone [SenseNova/SenseNova-SI](https://github.com/SenseNova/SenseNova-SI) into `./SenseNova-SI` (or set `SENSENOVA_PATH=<dir>`).
+- **SenseNova-SI**: clone [OpenSenseNova/SenseNova-SI](https://github.com/OpenSenseNova/SenseNova-SI) into `./SenseNova-SI` (or set `SENSENOVA_PATH=<dir>`).
 - **ms-swift**: required for LoRA training; install via `pip install ms-swift`.
 
 ### 2. Download the dataset
