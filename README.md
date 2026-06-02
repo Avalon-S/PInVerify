@@ -15,11 +15,11 @@ Official code release for the FMEA @ CVPR 2026 paper
 
 PInVerify introduces **Active Instance Verification (AIV)**: the agent has already navigated near a candidate object and must now actively select viewpoints around it to decide whether it matches a fine-grained natural-language description. We provide a 3,000-episode offline benchmark with a 6-sector navigation topology, plus reference training-free and LoRA-fine-tuned MLLM agents.
 
-## Project Status & Collaboration
+## Roadmap & Collaboration
 
-This release is part of a larger effort I plan to extend toward a main-conference submission. What is public here is about 3/5 of the planned scope. Two parts are still missing: experiments on frontier MLLMs, and real-robot testing. Because of resource conflicts with my internship and other projects, I have paused this line of work for now and am releasing the part that is ready.
+PInVerify is an actively developed project, and this is its first public release on the way to a main-conference version. It currently covers about 3/5 of the planned scope, and I am actively extending it. The next milestones are experiments on frontier MLLMs and real-robot testing, which I am pursuing as time and resources allow.
 
-If this direction interests you and you can offer relevant resources (compute, robot hardware, etc.), I am open for collaboration. Reach out to Yuhang Jiang at [jyhtjtj@gmail.com](mailto:jyhtjtj@gmail.com) · [avalon-s.github.io](https://avalon-s.github.io/).
+If this direction interests you and you can offer relevant resources (compute, robot hardware, etc.), I am open for collaboration to push it forward faster. Reach out to Yuhang Jiang at [jyhtjtj@gmail.com](mailto:jyhtjtj@gmail.com) · [avalon-s.github.io](https://avalon-s.github.io/).
 
 ---
 
