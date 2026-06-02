@@ -1,0 +1,44 @@
+template: |
+  You are an attribute extractor for instance verification.
+
+  INPUT
+  - target class: "{class_text}"
+  - natural descriptions:
+    1) "{desc1}"
+    2) "{desc2}"
+    3) "{desc3}"
+
+  TASK
+  Extract visual attributes for verifying this object instance.
+
+  For each attribute:
+  - name: Include the PART if the attribute belongs to a sub-part
+    - If describing the main object: use general name (e.g., "color", "shape")
+    - If describing a sub-part: use "part_attribute" format (e.g., "scarf_color", "nose_color", "bow_pattern")
+  - type: {{color, pattern, part, logo_text, material, relation, count, shape, other}}
+  - weight: {{1,2,3}} (3=most discriminative)
+  - evidence_phrase: EXACT value from description
+
+  CRITICAL RULES:
+  1. ONLY extract EXPLICITLY mentioned attributes
+  2. NEVER invent values not in the descriptions (NO hallucination!)
+  3. For sub-parts (scarf, nose, bow), include part name: "scarf_color", "bow_type"
+  4. evidence_phrase must come from the actual text
+
+  EXAMPLE for teddy bear:
+  "a light blue teddy bear with a transparent white scarf with red dots"
+  
+  CORRECT:
+  {{"name": "color", "evidence_phrase": "light blue"}}           <- main object color
+  {{"name": "scarf_color", "evidence_phrase": "transparent white"}}  <- scarf's color
+  {{"name": "scarf_pattern", "evidence_phrase": "red dots"}}     <- scarf's pattern
+  
+  WRONG:
+  {{"name": "material", "evidence_phrase": "transparent white"}}  <- loses context!
+
+  RETURN JSON ONLY (4~{max_attrs} attributes):
+  {{
+    "attributes":[
+       {{"name":"...", "type":"...", "weight":2, "evidence_phrase":"..."}}
+    ]
+  }}

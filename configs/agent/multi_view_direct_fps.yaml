@@ -1,0 +1,56 @@
+# Multi-View Direct Query Agent (Farthest Point Sampling NBV)
+# 多视角直接提问：多次观察，不需要属性拆解
+# NBV: 几何启发式最远点采样，选择角度距离最远的未访问扇区
+
+prompt:
+    version: multi_view_direct_fps
+    extract_file: null
+    verify_file: "verify_v1.yaml"
+    nav_file: null  # FPS doesn't need nav prompt
+    category_file: "category_v1.yaml"
+
+method:
+    name: "mllm"
+    agent_type: "multi_view_direct_fps"
+
+    use_attribute_decomposition: false
+    query_mode: "direct"
+    allow_unsure: false
+    voting_strategy: "majority"
+    coarse_mode: "infer"
+    bbox_mode: "dino"
+    input_mode: "env"
+    decision_mode: "vote_till_end"
+
+    # --- Modular Config ---
+    fusion:
+      type: "majority"  # Direct模式三句话地位相同，使用简单投票
+
+    nbv:
+      type: "farthest"  # 使用 FarthestPointNBV (几何最远点采样)
+
+env:
+    max_steps: 3
+    sectors: 6
+    view_priority: "far"
+
+dataset:
+    root: "./data/pv_dataset"
+    capture_subdir: "pin_capture"
+    image_gt_root: "./data/pv_dataset/image_gt"
+    category_cache_path: "./data/pv_dataset/category_cache.json"
+    split: "val"
+    index_file: "pv_index_50.jsonl"
+    desc_db: "./data/pv_dataset/object_descriptions_with_category.json"
+
+output:
+    root: "./outputs/multi_view_direct_fps"
+    save_viz: true
+
+server:
+    qwen_text_url: "http://127.0.0.1:12182/qwen-text"
+    qwen_vl_url: "http://127.0.0.1:12182/qwen-vl"
+    gdino_url: "http://127.0.0.1:12183/groundingdino"
+
+evaluation:
+    unsure_as_negative: true

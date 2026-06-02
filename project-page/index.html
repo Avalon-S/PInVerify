@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PInVerify: An Offline Embodied Benchmark for Active Instance Verification</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="static/css/style.css" />
+  <style>
+    /* Gallery modal */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-content {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 2rem;
+      max-width: 520px;
+      width: 90%;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+    }
+    .modal-close {
+      position: absolute; top: 0.75rem; right: 1rem;
+      background: none; border: none; font-size: 1.5rem;
+      cursor: pointer; color: var(--gray-600);
+    }
+    .modal-img {
+      width: 180px; height: 180px;
+      object-fit: contain; display: block;
+      margin: 0 auto 1rem;
+      border-radius: var(--radius-sm);
+      background: var(--gray-100);
+    }
+    .modal-cat {
+      text-align: center; font-size: 1.1rem;
+      font-weight: 700; margin-bottom: 1rem;
+      color: var(--blue);
+      text-transform: capitalize;
+    }
+    .modal-descs { list-style: none; padding: 0; }
+    .modal-descs li {
+      padding: 0.6rem 0.8rem;
+      margin-bottom: 0.5rem;
+      background: var(--gray-50);
+      border-left: 3px solid var(--red);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 0.88rem;
+      color: var(--gray-800);
+    }
+    .modal-descs li:nth-child(2) { border-left-color: var(--blue); }
+    .modal-descs li:nth-child(3) { border-left-color: var(--red-light); }
+    .modal-descs li::before {
+      font-weight: 700; margin-right: 0.5rem;
+    }
+    .modal-descs li:nth-child(1)::before { content: "D1"; color: var(--red); }
+    .modal-descs li:nth-child(2)::before { content: "D2"; color: var(--blue); }
+    .modal-descs li:nth-child(3)::before { content: "D3"; color: var(--red-light); }
+
+    /* Demo section */
+    .demo-tabs {
+      display: flex; gap: 0.5rem; justify-content: center;
+      flex-wrap: wrap; margin-bottom: 1rem;
+    }
+    .demo-tab {
+      padding: 0.5rem 1.2rem;
+      border-radius: 50px;
+      border: 2px solid var(--gray-300);
+      background: var(--white);
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--gray-600);
+      transition: var(--transition);
+    }
+    .demo-tab:hover { border-color: var(--blue); color: var(--blue); }
+    .demo-tab.active {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: var(--white);
+    }
+    .demo-tab.active-red {
+      background: var(--red);
+      border-color: var(--red);
+      color: var(--white);
+    }
+    .demo-iframe-wrapper {
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+      border: 2px solid var(--gray-200);
+    }
+    .demo-iframe-wrapper iframe {
+      width: 100%; height: 700px; border: none;
+    }
+    .demo-label {
+      text-align: center; margin-top: 0.75rem;
+      font-size: 0.85rem; color: var(--gray-600);
+    }
+    /* Sticky nav */
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 900;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--gray-200);
+      padding: 0.55rem 0;
+    }
+    .site-nav ul {
+      list-style: none;
+      display: flex;
+      justify-content: center;
+      gap: 1.6rem;
+      flex-wrap: wrap;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .site-nav a {
+      color: var(--gray-600);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      padding: 0.2rem 0;
+      border-bottom: 2px solid transparent;
+      transition: var(--transition);
+    }
+    .site-nav a:hover { color: var(--red); border-bottom-color: var(--red); }
+    .site-nav a.active { color: var(--blue); border-bottom-color: var(--blue); }
+  </style>
+</head>
+<body>
+
+<!-- ========== NAV ========== -->
+<nav class="site-nav" id="siteNav">
+  <ul>
+    <li><a href="#abstract">Abstract</a></li>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#method">Method</a></li>
+    <li><a href="#dataset">Dataset</a></li>
+    <li><a href="#results">Results</a></li>
+    <li><a href="#findings">Findings</a></li>
+    <li><a href="#demo">Demo</a></li>
+    <li><a href="#citation">Citation</a></li>
+  </ul>
+</nav>
+
+<!-- ========== HERO ========== -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-logos">
+      <img src="static/images/logo_unitn.png" alt="University of Trento" />
+    </div>
+
+    <h1>PInVerify</h1>
+    <p class="subtitle">An Offline Embodied Benchmark for<br><strong>Active Instance Verification (AIV)</strong></p>
+
+    <p class="authors">
+      <a href="https://avalon-s.github.io/" target="_blank" rel="noopener"><strong>Yuhang Jiang</strong></a>
+    </p>
+    <p class="affiliations">
+      University of Trento<br>
+      FMEA Workshop, CVPR 2026 (Poster)
+    </p>
+
+    <div class="btn-group">
+      <a href="https://arxiv.org/abs/2605.30639" class="btn btn-red">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM6 20V4h5v7h7v9H6z"/></svg>
+        Paper
+      </a>
+      <a href="https://github.com/Avalon-S/PInVerify" class="btn btn-blue">
+        <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.09-.745.083-.73.083-.73 1.205.085 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.418-1.305.762-1.604-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23a11.5 11.5 0 016.003 0c2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.694.825.576C20.565 21.795 24 17.295 24 12 24 5.37 18.627 0 12 0z"/></svg>
+        Code
+      </a>
+      <a href="https://github.com/Avalon-S/PInVerify#dataset" class="btn btn-outline-red">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 4l8 5 8-5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        Dataset
+      </a>
+      <a href="#demo" class="btn btn-outline-blue">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        Demo
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ========== STATS ========== -->
+<section>
+  <div class="container">
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="number">3,000</div>
+        <div class="label">Evaluation Episodes</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">18</div>
+        <div class="label">Object Categories</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">85.6%</div>
+        <div class="label">Best Accuracy<br><small style="font-weight:400;font-size:0.75rem">SFT+GSPO, Qwen3-VL-4B, Grounding DINO</small></div>
+      </div>
+      <div class="stat-card">
+        <div class="number">15K+</div>
+        <div class="label">Training Pairs</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== ABSTRACT ========== -->
+<section id="abstract">
+  <div class="container">
+    <div class="section-title"><h2>Abstract</h2></div>
+    <div class="abstract-box">
+      <p>We introduce <strong>Active Instance Verification (AIV)</strong>, a task requiring an embodied agent
+      to actively select viewpoints around a candidate object and determine whether it matches
+      a fine-grained natural-language description. We present <strong>PInVerify</strong>, the first benchmark
+      to isolate post-arrival instance verification as the primary task, with 3,000 evaluation
+      episodes across 18 object categories in a 6-sector navigation topology featuring trap views
+      and unreachable sectors. Our MLLM-based agent framework combines attribute decomposition,
+      per-attribute verification, a confidence-weighted multi-view state tracker, and
+      next-best-view (NBV) selection strategies. Training-free agents using Qwen3-VL achieve
+      up to 85.0% accuracy, while fine-tuned agents (SFT + GSPO) reach 85.6% with
+      14.9 percentage points higher positive confirmation and halved navigation failure rates.
+      Analysis reveals that <em>how the agent queries</em> (attribute decomposition vs. holistic matching)
+      matters more than <em>where it looks</em> (NBV strategy), and that detection quality
+      is the primary performance bottleneck.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== OVERVIEW ========== -->
+<section id="overview">
+  <div class="container">
+    <div class="section-title"><h2>Task Overview</h2></div>
+    <div class="figure-container">
+      <img src="static/images/overview.png" alt="PInVerify overview" />
+      <p class="caption">Active Instance Verification (AIV): the agent navigates around a candidate object, selects informative viewpoints,<br>
+        and determines Match or Mismatch based on language descriptions.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== METHOD ========== -->
+<section id="method">
+  <div class="container">
+    <div class="section-title"><h2>Method</h2></div>
+    <div class="figure-container">
+      <img src="static/images/method_pipeline.png" alt="Two-track pipeline" />
+      <p class="caption">Two-track framework: training-free modular pipeline (top) vs. trained end-to-end agent (bottom).</p>
+    </div>
+
+    <div class="method-highlights">
+      <div class="method-card">
+        <h3>Attribute Decomposition</h3>
+        <p>Break descriptions into individually verifiable sub-problems: color, shape, material, relations. Each attribute is verified independently with Match / Contradictory / Missing states.</p>
+      </div>
+      <div class="method-card">
+        <h3>Multi-View Tracking</h3>
+        <p>Confidence-weighted state tracker accumulates evidence across viewpoints. Conservative philosophy: contradiction must outweigh both match and missing to trigger rejection.</p>
+      </div>
+      <div class="method-card">
+        <h3>SFT + GSPO Training</h3>
+        <p>Supervised fine-tuning teaches structured &lt;think&gt; + &lt;answer&gt; format, then Group Sequence Policy Optimization calibrates the stop/continue boundary via reward-based RL.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== DATASET ========== -->
+<section id="dataset">
+  <div class="container">
+    <div class="section-title"><h2>Dataset</h2></div>
+
+    <div class="figure-container">
+      <img src="static/images/sector_topology.png" alt="6-sector navigation topology" />
+      <p class="caption">6-sector navigation topology with three pair types (positive, neg_same, neg_diff),
+        trap views (navigable but target invisible), and unreachable sectors.</p>
+    </div>
+
+    <p style="text-align:center; margin:1.5rem 0 0.5rem; font-weight:600; color:var(--gray-800);">
+      18 Object Categories <span style="font-weight:400; color:var(--gray-600);">&mdash; click to see descriptions</span>
+    </p>
+    <div class="gallery-grid" id="gallery"></div>
+  </div>
+</section>
+
+<!-- Gallery Modal -->
+<div class="modal-overlay" id="galleryModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <img class="modal-img" id="modalImg" src="" alt="" />
+    <div class="modal-cat" id="modalCat"></div>
+    <ul class="modal-descs" id="modalDescs"></ul>
+  </div>
+</div>
+
+<!-- ========== RESULTS ========== -->
+<section id="results">
+  <div class="container">
+    <div class="section-title"><h2>Main Results</h2></div>
+
+    <div class="results-wrapper">
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th style="text-align:left">Method</th>
+            <th>Det.</th>
+            <th>Overall</th>
+            <th>Pos</th>
+            <th>Neg_Same</th>
+            <th>Neg_Diff</th>
+            <th>ASD</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="group-header"><td colspan="7">Training-Free (Qwen3-VL-4B)</td></tr>
+          <tr>
+            <td class="method-name">SV-Attr</td>
+            <td>Grounding DINO</td><td>84.4</td><td class="highlight">65.2</td><td>91.8</td><td>96.1</td><td>1.00</td>
+          </tr>
+          <tr>
+            <td class="method-name">SV-Direct</td>
+            <td>Grounding DINO</td><td>81.3</td><td>45.7</td><td>98.4</td><td class="highlight">99.9</td><td>1.00</td>
+          </tr>
+          <tr>
+            <td class="method-name">MV-Attr + LLM NBV</td>
+            <td>Grounding DINO</td><td class="highlight">85.0</td><td>59.6</td><td>96.5</td><td>98.8</td><td>2.34</td>
+          </tr>
+          <tr>
+            <td class="method-name">MV-Direct + Random</td>
+            <td>Grounding DINO</td><td>82.7</td><td>49.2</td><td class="highlight">99.1</td><td class="highlight">99.9</td><td>2.09</td>
+          </tr>
+
+          <tr class="group-header"><td colspan="7">Trained Agents (Qwen3-VL-4B + LoRA)</td></tr>
+          <tr>
+            <td class="method-name">Base (no fine-tuning)</td>
+            <td>Grounding DINO</td><td>70.6</td><td>14.6</td><td>97.3</td><td class="highlight">99.9</td><td>1.74</td>
+          </tr>
+          <tr>
+            <td class="method-name">SFT</td>
+            <td>Grounding DINO</td><td>84.8</td><td class="highlight">75.9</td><td>81.4</td><td>97.1</td><td>1.96</td>
+          </tr>
+          <tr>
+            <td class="method-name">SFT + GRPO</td>
+            <td>Grounding DINO</td><td>85.3</td><td>73.6</td><td>83.8</td><td class="highlight">98.5</td><td>1.61</td>
+          </tr>
+          <tr>
+            <td class="method-name">SFT + GSPO</td>
+            <td>Grounding DINO</td><td class="highlight">85.6</td><td>74.5</td><td class="highlight">83.9</td><td class="highlight">98.5</td><td>1.62</td>
+          </tr>
+          <tr class="gt-row">
+            <td class="method-name">SFT + GSPO</td>
+            <td>GT</td><td class="highlight-gt">88.9</td><td class="highlight-gt">81.3</td><td class="highlight-gt">86.4</td><td class="highlight-gt">99.1</td><td>1.65</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="text-align:center; margin-top:0.5rem; font-size:0.8rem; color:var(--gray-600);">
+      3,000 episodes (1K per pair type). 95% binomial CI &approx; &pm;1.3pp at p=0.85. ASD = Average Steps to Decision.
+    </p>
+  </div>
+</section>
+
+<!-- ========== KEY FINDINGS ========== -->
+<section id="findings">
+  <div class="container">
+    <div class="section-title"><h2>Key Findings</h2></div>
+
+    <div class="findings-grid">
+      <div class="finding-card">
+        <div class="finding-icon red">1</div>
+        <div>
+          <h3>Query Strategy > Navigation Strategy</h3>
+          <p>Attribute decomposition outperforms holistic matching by +3.1pp. NBV strategies show minimal differentiation (0.848&ndash;0.850).</p>
+        </div>
+      </div>
+      <div class="finding-card">
+        <div class="finding-icon blue">2</div>
+        <div>
+          <h3>Detection Is the Bottleneck</h3>
+          <p>GT bounding boxes improve accuracy by +1.0 to +3.4pp across all methods. Grounding DINO's miss rate directly caps positive accuracy.</p>
+        </div>
+      </div>
+      <div class="finding-card">
+        <div class="finding-icon red">3</div>
+        <div>
+          <h3>Complementary Strengths</h3>
+          <p>Training-free excels at rejection (Neg_Same 96.5%); trained agents excel at confirmation (Pos +14.9pp). Neither dominates both.</p>
+        </div>
+      </div>
+      <div class="finding-card">
+        <div class="finding-icon blue">4</div>
+        <div>
+          <h3>RL as Calibration Corrector</h3>
+          <p>GSPO halves navigation failures (18.2% &rarr; 9.1%) and improves efficiency (ASD 1.96 &rarr; 1.62) without new visual capabilities.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="figure-container" style="margin-top: 2.5rem;">
+      <img src="static/images/efficiency_accuracy_scatter.png" alt="Efficiency-accuracy trade-off" />
+      <p class="caption">Efficiency&ndash;accuracy trade-off. Trained agents (stars) achieve higher accuracy with fewer observation steps.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== INTERACTIVE DEMO ========== -->
+<section id="demo">
+  <div class="container">
+    <div class="section-title"><h2>Interactive Demo</h2></div>
+    <p style="text-align:center; margin-bottom:1.5rem; color:var(--gray-600);">
+      Browse real episode visualizations from PInVerify. Each demo shows the agent's step-by-step reasoning.
+    </p>
+
+    <div class="demo-tabs">
+      <button class="demo-tab active" onclick="switchDemo('positive_belief_flip', this)">Belief Flip (Match)</button>
+      <button class="demo-tab" onclick="switchDemo('neg_same_rejection', this)">Same-Cat Reject</button>
+      <button class="demo-tab" onclick="switchDemo('neg_diff_correct', this)">Diff-Cat Reject</button>
+      <button class="demo-tab" onclick="switchDemo('positive_navfail', this)">Nav Failure</button>
+    </div>
+
+    <div class="demo-iframe-wrapper">
+      <iframe id="demoFrame" src="static/demos/demo_positive_belief_flip.html"></iframe>
+    </div>
+    <p class="demo-label" id="demoLabel">6-step episode: agent initially uncertain, flips to Match after gathering more views</p>
+  </div>
+</section>
+
+<!-- ========== CITATION ========== -->
+<section id="citation">
+  <div class="container">
+    <div class="section-title"><h2>Citation</h2></div>
+    <div class="citation-box">
+      <button class="copy-btn" onclick="copyBib()">Copy</button>
+<pre id="bibtex">@inproceedings{jiang2026pinverify,
+  title         = {PInVerify: An Offline Embodied Benchmark
+                   for Active Instance Verification},
+  author        = {Jiang, Yuhang},
+  booktitle     = {Foundation Models Meet Embodied Agents (FMEA)
+                   Workshop at CVPR},
+  year          = {2026},
+  note          = {Poster},
+  eprint        = {2605.30639},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CV}
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ========== FOOTER ========== -->
+<footer>
+  <div class="container">
+    <p>&copy; 2026 Yuhang Jiang &bull; University of Trento</p>
+  </div>
+</footer>
+
+<!-- ========== SCRIPTS ========== -->
+<script>
+// ---- Gallery ----
+const categories = [
+  'backpack', 'bag', 'ball', 'book', 'camera', 'cellphone',
+  'eyeglasses', 'hat', 'headphones', 'keys', 'laptop', 'mug',
+  'shoes', 'teddy_bear', 'toy', 'visor', 'wallet', 'watch'
+];
+
+const galleryDescriptions = {
+  backpack_0: ["a brown leather backpack with gold details and two golden buckles","a leather backpack with golden finishes","a chocolate bag"],
+  bag_0: ["a brown suitcase with a red and blue sticker on it","a brown suitcase with several holiday stickers on it","a suitcase with many stickers on it"],
+  ball_0: ["a classic black and white football","a simple black and white soccer ball","a soccer ball with a black and white pattern"],
+  book_0: ["an open book on black and white pages","an open book showing two black and white pages with architecture meets mode written on them","a book opened to show a black and white photo"],
+  camera_0: ["a black nikon reflex camera","a black nikon reflex camera with digital screen on the back","a digital camera with a lens attached to it"],
+  cellphone_0: ["a black phone with grey screen","a black cellphone with four camera lens on a column, a fingerprint reader and the vector logo name on the back","a black phone with a white screen"],
+  eyeglasses_0: ["a pair of golden aviator eyeglasses","a pair of golden aviator thin eyeglasses","a pair of glasses with a gold rim"],
+  hat_0: ["a dark blue hat with a yellow text on the front","a dark blue hat with black bill and top button and a yellow writing on the front panel","a black baseball cap with a logo on it"],
+  headphones_0: ["a pair of completely black headphones","a pair of black headphones with two white stripes on the headband and without logos","a pair of black headphones"],
+  keys_0: ["a black and grey key and a remote with a red and a blue buttons","a key with a black blade, a gray head, and a gray remote controller attached with a red and a blue buttons","a key and a remote control"],
+  laptop_0: ["a black msi laptop with red keyboard and details","a black laptop with red keyboard and borders, msi written under the screen and on the back above the msi red logo","a laptop computer with a red keyboard"],
+  mug_0: ["a white mug with a bear print","a white mug having a cute bear with a red scarf and a honey jar printed on it","a white coffee mug with a cartoon bear on it"],
+  shoes_0: ["a pair of red and yellow boots","a pair of red and yellow boots with black soles and yellow laces","a pair of red and yellow boots with yellow laces and black sole"],
+  teddy_bear_0: ["a plush toy of a brown monkey","a plush toy of a brown monkey with black oval eyes sitting on a stack of white books and papers","a monkey plush toy on sitting on a pile of papers"],
+  toy_0: ["a pink piggy bank with pen marks","a pink piggy bank with pen marks on it, representing two wings, screaming mouth and crying eyes","a pink pig toy with black pen marks on it"],
+  visor_0: ["a black visor with white and light blue front","a visor with light blue finished around the light gray front side, and black band and foam cushioning","a virtual reality headset with a light blue border and a black strap"],
+  wallet_0: ["an opened brown leather wallet with credit cards","a brown bifold leather wallet with a black logo on the front bottom right corner","a brown leather wallet with a black label"],
+  watch_0: ["a blue watch with a blue leather strap","a watch with blue and white leather band, blue crystal, silver case and hands, and filosofia as brand","a blue watch with a white face and a blue strap"]
+};
+
+const gallery = document.getElementById('gallery');
+categories.forEach(cat => {
+  const div = document.createElement('div');
+  div.className = 'gallery-item';
+  div.style.cursor = 'pointer';
+  div.onclick = () => openModal(cat);
+  div.innerHTML = `
+    <img src="static/images/gallery/${cat}_0.png" alt="${cat}" loading="lazy" />
+    <div class="category-label">${cat.replace(/_/g, ' ')}</div>
+  `;
+  gallery.appendChild(div);
+});
+
+function openModal(cat) {
+  const key = cat + '_0';
+  const descs = galleryDescriptions[key] || ['No descriptions available'];
+  document.getElementById('modalImg').src = `static/images/gallery/${cat}_0.png`;
+  document.getElementById('modalCat').textContent = cat.replace(/_/g, ' ');
+  const list = document.getElementById('modalDescs');
+  list.innerHTML = '';
+  descs.forEach(d => {
+    const li = document.createElement('li');
+    li.textContent = d;
+    list.appendChild(li);
+  });
+  document.getElementById('galleryModal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('galleryModal').classList.remove('active');
+}
+
+document.getElementById('galleryModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ---- Demo tabs ----
+const demoLabels = {
+  'positive_belief_flip': '6-step episode: agent initially uncertain, flips to Match after gathering more views',
+  'neg_same_rejection':   '4-step episode: agent consistently rejects same-category distractor (color contradiction)',
+  'neg_diff_correct':     'Agent quickly identifies different-category object and stops early',
+  'positive_navfail':     '6-step episode: navigation failure traps agent at back view, leading to false rejection'
+};
+
+function switchDemo(name, btn) {
+  document.getElementById('demoFrame').src = `static/demos/demo_${name}.html`;
+  document.getElementById('demoLabel').textContent = demoLabels[name] || '';
+  document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active', 'active-red'));
+  btn.classList.add(name.includes('navfail') ? 'active-red' : 'active');
+}
+
+// ---- Copy citation ----
+function copyBib() {
+  const text = document.getElementById('bibtex').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+
+// ---- Sticky nav: show after hero, highlight active section ----
+const siteNav = document.getElementById('siteNav');
+const heroEl = document.querySelector('.hero');
+const navLinks = siteNav.querySelectorAll('a');
+const sectionIds = ['abstract','overview','method','dataset','results','findings','demo','citation'];
+const sections = sectionIds.map(id => document.getElementById(id)).filter(Boolean);
+
+function updateNav() {
+  let current = '';
+  for (const sec of sections) {
+    if (sec.getBoundingClientRect().top <= 120) current = sec.id;
+  }
+  navLinks.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+  });
+}
+window.addEventListener('scroll', updateNav, { passive: true });
+updateNav();
+</script>
+
+</body>
+</html>

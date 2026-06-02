@@ -1,0 +1,38 @@
+# Trained Agent — SFT only
+# Qwen3-VL-4B + LoRA, dual-image input, unified decision
+
+prompt:
+    version: trained_sft
+    extract_file: null
+    verify_file: null
+    nav_file: null
+    category_file: null
+
+method:
+    name: "trained"
+    agent_type: "trained_sft"
+    bbox_mode: "gt"
+
+env:
+    max_steps: 6
+    sectors: 6
+    view_priority: "far"
+
+dataset:
+    root: "./data/pv_dataset"
+    capture_subdir: "pin_capture"
+    split: "val"
+    index_file: "pv_index_all.jsonl"
+    desc_db: "./data/pv_dataset/object_descriptions_with_category.json"
+
+output:
+    root: "./outputs/trained_sft"
+    save_viz: true
+
+server:
+    qwen_text_url: "http://127.0.0.1:12182/qwen-text"
+    qwen_vl_url: "http://127.0.0.1:12182/qwen-vl"
+    gdino_url: "http://127.0.0.1:12183/groundingdino"
+
+evaluation:
+    unsure_as_negative: true

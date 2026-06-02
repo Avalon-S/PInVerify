@@ -1,0 +1,61 @@
+# Single-View Direct Query Agent
+# 单视角直接提问：每个episode只看一次，不需要属性拆解
+# 将三个prompt依次提问Yes/No，不允许Unsure，最后投票得出结果
+
+# Prompt Templates (from prompts/ folder)
+prompt:
+    version: single_view_direct
+    extract_file: null  # 不使用属性拆解
+    verify_file: "verify_v1.yaml"
+    nav_file: null  # 不需要导航
+    category_file: "category_v1.yaml"
+
+method:
+    name: "mllm"
+    agent_type: "single_view_direct"
+    
+    # 不使用属性拆解
+    use_attribute_decomposition: false
+    
+    # 直接提问模式
+    query_mode: "direct"
+    
+    # 不允许Unsure
+    allow_unsure: false
+    
+    # 投票策略
+    voting_strategy: "majority"
+    
+    # 粗类别模式
+    coarse_mode: "infer"
+    bbox_mode: "dino"
+    input_mode: "env"
+    
+    # 决策模式
+    decision_mode: "early_exit"
+
+env:
+    max_steps: 1
+    sectors: 6
+    view_priority: "far"
+
+dataset:
+    root: "./data/pv_dataset"
+    capture_subdir: "pin_capture"
+    image_gt_root: "./data/pv_dataset/image_gt"
+    category_cache_path: "./data/pv_dataset/category_cache.json"
+    split: "val"
+    index_file: "pv_index_50.jsonl"  # Options: pv_index_all.jsonl, pv_index_50.jsonl, pv_index_500.jsonl, pv_index_1000.jsonl
+    desc_db: "./data/pv_dataset/object_descriptions_with_category.json"
+
+output:
+    root: "./outputs/single_view_direct"
+    save_viz: true
+
+server:
+    qwen_text_url: "http://127.0.0.1:12182/qwen-text"
+    qwen_vl_url: "http://127.0.0.1:12182/qwen-vl"
+    gdino_url: "http://127.0.0.1:12183/groundingdino"
+
+evaluation:
+    unsure_as_negative: true

@@ -1,0 +1,45 @@
+# CLIP Single-View Baseline
+# 单视角 CLIP cosine similarity baseline
+# 裁剪图 + 描述文本 → cosine similarity → 阈值判断 Yes/No
+
+prompt:
+    version: clip_single_view
+    extract_file: null
+    verify_file: null
+    nav_file: null
+    category_file: "category_v1.yaml"
+
+method:
+    name: "clip"
+    agent_type: "clip_single_view"
+    bbox_mode: "dino"
+    clip_model: "./models/clip-vit-large-patch14"
+    clip_threshold: 0.25
+    aggregation: "max"
+    desc_aggregation: "avg"
+
+env:
+    max_steps: 1
+    sectors: 6
+    view_priority: "far"
+
+dataset:
+    root: "./data/pv_dataset"
+    capture_subdir: "pin_capture"
+    image_gt_root: "./data/pv_dataset/image_gt"
+    category_cache_path: "./data/pv_dataset/category_cache.json"
+    split: "val"
+    index_file: "pv_index_50.jsonl"
+    desc_db: "./data/pv_dataset/object_descriptions_with_category.json"
+
+output:
+    root: "./outputs/clip_single_view"
+    save_viz: true
+
+server:
+    qwen_text_url: "http://127.0.0.1:12182/qwen-text"
+    qwen_vl_url: "http://127.0.0.1:12182/qwen-vl"
+    gdino_url: "http://127.0.0.1:12183/groundingdino"
+
+evaluation:
+    unsure_as_negative: true

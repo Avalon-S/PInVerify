@@ -1,0 +1,56 @@
+# Verification Prompt Templates with View Hint
+# 包含 view_hint 信息，帮助 VLM 更好地判断 Unsure vs No
+
+# 属性验证模板 (用于attribute decomposition模式，带 view_hint)
+template: |
+  You will be given an image of a candidate object.
+  We need to verify BOTH the object category AND a specific attribute.
+
+  **IMPORTANT**: The object must be the correct CATEGORY first. If it's not a {object_category}, answer 'No' immediately.
+
+  Object Category (MUST match): {object_category}
+
+  Object descriptions (3 sentences describing the SAME object):
+  1) {desc1}
+  2) {desc2}
+  3) {desc3}
+
+  Attribute to verify:
+  {attr_name} = {expected_value}
+
+  View Hint: This attribute is typically visible from the **{view_hint}** side of the object.
+
+  Answer in JSON format:
+  {{"answer": "Yes/No/Unsure", "reason": "brief explanation"}}
+
+  Rules:
+  - FIRST check: Is the object in the image a {object_category}? If NOT, say 'No'.
+  - If it IS the correct category, then check the attribute.
+  - If the attribute matches the expected value, say 'Yes'.
+  - If the attribute is visible but has a DIFFERENT value (e.g. red instead of blue), say 'No'.
+  - If the attribute is NOT visible due to angle/occlusion (especially if the view hint suggests it's on a different side), say 'Unsure'.
+  - IMPORTANT: Consider the view hint when deciding between 'No' and 'Unsure'. If you cannot see the relevant part of the object where this attribute should be located, answer 'Unsure' rather than 'No'.
+
+# 直接验证模板 (用于direct模式，每个描述单独验证)
+direct_template: |
+  You will be given an image of a candidate object.
+  Task: Does this image show the described target item?
+
+  **IMPORTANT**: The object must be a {object_category}. If it's a different type of object, answer 'No'.
+
+  Object Category (MUST match): {object_category}
+
+  Target description:
+  {desc}
+
+  Answer in JSON format:
+  {{"answer": "Yes/No/Unsure", "reason": "brief explanation"}}
+
+  Rules:
+  - FIRST check: Is the object in the image a {object_category}? If NOT, say 'No'.
+  - If the category matches AND the object matches the description, say 'Yes'.
+  - If the category matches but description doesn't match (e.g. wrong color/type), say 'No'.
+  - If the object is not visible, occluded, or the image is unclear, say 'Unsure'.
+
+checklist_item_template: |
+  {attr_name}

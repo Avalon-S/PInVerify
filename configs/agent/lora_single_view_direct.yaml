@@ -1,0 +1,48 @@
+# LoRA Fine-tuned Single-View Direct Query Agent
+# LoRA 微调后的单视角直接验证
+
+prompt:
+    version: lora_single_view_direct
+    extract_file: null
+    verify_file: "verify_v1.yaml"
+    nav_file: null
+    category_file: "category_v1.yaml"
+
+method:
+    name: "mllm"
+    agent_type: "lora_single_view_direct"
+
+    use_attribute_decomposition: false
+    query_mode: "direct"
+    allow_unsure: false
+    voting_strategy: "majority"
+    coarse_mode: "cache"
+    bbox_mode: "dino"
+    input_mode: "env"
+    decision_mode: "early_exit"
+
+env:
+    max_steps: 1
+    sectors: 12
+    view_priority: "far"
+
+dataset:
+    root: "./data/pv_dataset"
+    capture_subdir: "pin_capture"
+    image_gt_root: "./data/pv_dataset/image_gt"
+    category_cache_path: "./data/pv_dataset/category_cache.json"
+    split: "val"
+    index_file: "pv_index_50.jsonl"
+    desc_db: "./data/pv_dataset/object_descriptions_with_category.json"
+
+output:
+    root: "./outputs/lora_single_view_direct"
+    save_viz: true
+
+server:
+    qwen_text_url: "http://127.0.0.1:12182/qwen-text"
+    qwen_vl_url: "http://127.0.0.1:12182/qwen-vl"
+    gdino_url: "http://127.0.0.1:12183/groundingdino"
+
+evaluation:
+    unsure_as_negative: true

@@ -1,0 +1,54 @@
+template: |
+  You are an attribute extractor for instance verification.
+
+  INPUT
+  - target class: "{class_text}"
+  - natural descriptions:
+    1) "{desc1}"
+    2) "{desc2}"
+    3) "{desc3}"
+
+  TASK
+  Extract visual attributes for verifying this object instance, including VIEW HINTS.
+
+  For each attribute:
+  - name: Main object → "color", "shape"; Sub-part → "scarf_color", "bow_pattern"
+  - type: {{color, pattern, part, logo_text, material, relation, count, shape, other}}
+  - weight: {{1,2,3}} (3=most discriminative)
+  - evidence_phrase: EXACT value from description
+  - view_hint: {{front, back, left, right, top, bottom, any}} — where on THE OBJECT (object-centric, NOT agent-centric)
+
+  VIEW HINT GUIDELINES:
+  view_hint describes where the attribute is located ON THE OBJECT ITSELF:
+  - "front": face, chest, screen, keyboard, front logo
+  - "back": back panel, rear label, back ports
+  - "left"/"right": side features, pockets, handles
+  - "top"/"bottom": top surface, lid, base, wheels
+  - "any": overall color/shape/size (visible from all angles)
+  If description explicitly says "on the back/left/...", use that. If ambiguous, use "any".
+
+  RULES:
+  1. ONLY extract EXPLICITLY mentioned attributes (NO hallucination!)
+  2. For sub-parts, include part name: "scarf_color", "bow_type"
+  3. evidence_phrase must come from the actual text
+
+  EXAMPLE (teddy bear):
+  "a light blue teddy bear with a transparent white scarf with red dots"
+
+  {{"name": "color", "type": "color", "weight": 2, "evidence_phrase": "light blue", "view_hint": "any"}}
+  {{"name": "scarf_color", "type": "color", "weight": 2, "evidence_phrase": "transparent white", "view_hint": "front"}}
+  {{"name": "scarf_pattern", "type": "pattern", "weight": 3, "evidence_phrase": "red dots", "view_hint": "front"}}
+
+  EXAMPLE (laptop):
+  "a silver laptop with a blue logo on the back, black keyboard"
+
+  {{"name": "color", "type": "color", "weight": 1, "evidence_phrase": "silver", "view_hint": "any"}}
+  {{"name": "back_logo_color", "type": "logo_text", "weight": 3, "evidence_phrase": "blue logo", "view_hint": "back"}}
+  {{"name": "keyboard_color", "type": "color", "weight": 2, "evidence_phrase": "black keyboard", "view_hint": "front"}}
+
+  RETURN JSON ONLY (4~{max_attrs} attributes):
+  {{
+    "attributes":[
+       {{"name":"...", "type":"...", "weight":2, "evidence_phrase":"...", "view_hint":"..."}}
+    ]
+  }}

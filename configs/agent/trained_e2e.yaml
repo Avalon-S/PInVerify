@@ -1,0 +1,42 @@
+# Trained End-to-End Agent (SFT / SFT+GRPO / SFT+GSPO)
+# Model makes ALL decisions: navigation + verification + action
+# No external tracker/fusion/NBV modules
+# Use with: ADAPTER=<path> bash scripts/start_multigpu_servers_lora.sh
+
+prompt:
+    version: trained_e2e
+    extract_file: null
+    verify_file: null
+    nav_file: null
+    category_file: null
+
+method:
+    name: "trained"
+    agent_type: "trained_e2e"
+    bbox_mode: "gt"  # Training used GT bbox; also supports "dino"
+
+env:
+    max_steps: 6
+    sectors: 6
+    view_priority: "far"
+
+dataset:
+    root: "./data/pv_dataset"
+    capture_subdir: "pin_capture"
+    image_gt_root: "./data/pv_dataset/image_gt"
+    category_cache_path: "./data/pv_dataset/category_cache.json"
+    split: "val"
+    index_file: "pv_index_50.jsonl"
+    desc_db: "./data/pv_dataset/object_descriptions_with_category.json"
+
+output:
+    root: "./outputs/trained_e2e"
+    save_viz: true
+
+server:
+    qwen_text_url: "http://127.0.0.1:12182/qwen-text"
+    qwen_vl_url: "http://127.0.0.1:12182/qwen-vl"
+    gdino_url: "http://127.0.0.1:12183/groundingdino"
+
+evaluation:
+    unsure_as_negative: true

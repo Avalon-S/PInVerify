@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use PInVerify in your research, please cite the following paper."
+title: "PInVerify: An Offline Embodied Benchmark for Active Instance Verification"
+authors:
+  - family-names: Jiang
+    given-names: Yuhang
+    email: jyhtjtj@gmail.com
+    affiliation: University of Trento
+    orcid: ""
+date-released: 2026-05-29
+license: MIT
+repository-code: "https://github.com/Avalon-S/PInVerify"
+url: "https://avalon-s.github.io/PInVerify"
+identifiers:
+  - type: other
+    value: "arXiv:2605.30639"
+    description: "arXiv preprint"
+preferred-citation:
+  type: conference-paper
+  title: "PInVerify: An Offline Embodied Benchmark for Active Instance Verification"
+  authors:
+    - family-names: Jiang
+      given-names: Yuhang
+  year: 2026
+  collection-title: "Foundation Models Meet Embodied Agents (FMEA) Workshop at CVPR"
+  notes: "Poster"

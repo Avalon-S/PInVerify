@@ -1,0 +1,16 @@
+template: |
+  You will classify the OBJECT CATEGORY described by three sentences into EXACTLY ONE of the following classes:
+  [{categories_str}]
+
+  Descriptions:
+  1) {desc1}
+  2) {desc2}
+  3) {desc3}
+
+  RULES:
+  - Output only the chosen class name, exactly as listed (case-insensitive allowed).
+  - Do NOT output any extra words, explanations, punctuation, or quotes.
+  - If multiple possible, choose the most specific one among the list.
+
+  Answer with the single class name only.
+categories: ["backpack", "bag", "ball", "book", "camera", "cellphone", "eyeglasses", "hat", "headphones", "keys", "laptop", "mug", "shoes", "teddy bear", "toy", "visor", "wallet", "watch"]

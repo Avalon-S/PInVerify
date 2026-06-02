@@ -1,0 +1,53 @@
+# Verification Prompt Templates (v2)
+# 所有回答都要求输出JSON格式，包含answer和reason
+
+# 属性验证模板 (用于attribute decomposition模式)
+template: |
+  You will be given an image of a candidate object.
+  We need to verify BOTH the object category AND a specific attribute.
+  
+  **IMPORTANT**: The object must be the correct CATEGORY first. If it's not a {object_category}, answer 'No' immediately.
+  
+  Object Category (MUST match): {object_category}
+
+  Object descriptions (3 sentences describing the SAME object):
+  1) {desc1}
+  2) {desc2}
+  3) {desc3}
+
+  Attribute to verify:
+  {attr_name} = {expected_value}
+
+  Answer in JSON format:
+  {{"answer": "Yes/No/Unsure", "reason": "brief explanation"}}
+  
+  Rules:
+  - FIRST check: Is the object in the image a {object_category}? If NOT, say 'No'.
+  - If it IS the correct category, then check the attribute.
+  - If the attribute matches the expected value, say 'Yes'.
+  - If the attribute is visible but has a DIFFERENT value (e.g. red instead of blue), say 'No'.
+  - If the attribute is NOT visible due to angle/occlusion, say 'Unsure'.
+
+# 直接验证模板 (用于direct模式，每个描述单独验证)
+direct_template: |
+  You will be given an image of a candidate object.
+  Task: Does this image show the described target item?
+  
+  **IMPORTANT**: The object must be a {object_category}. If it's a different type of object, answer 'No'.
+  
+  Object Category (MUST match): {object_category}
+
+  Target description:
+  {desc}
+
+  Answer in JSON format:
+  {{"answer": "Yes/No/Unsure", "reason": "brief explanation"}}
+  
+  Rules:
+  - FIRST check: Is the object in the image a {object_category}? If NOT, say 'No'.
+  - If the category matches AND the object matches the description, say 'Yes'.
+  - If the category matches but description doesn't match (e.g. wrong color/type), say 'No'.
+  - If the object is not visible, occluded, or the image is unclear, say 'Unsure'.
+
+checklist_item_template: |
+  {attr_name}

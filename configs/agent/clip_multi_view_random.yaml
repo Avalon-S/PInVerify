@@ -1,0 +1,47 @@
+# CLIP Multi-View Random Baseline
+# 多视角 CLIP: Random NBV + cosine similarity 聚合
+
+prompt:
+    version: clip_multi_view_random
+    extract_file: null
+    verify_file: null
+    nav_file: null
+    category_file: "category_v1.yaml"
+
+method:
+    name: "clip"
+    agent_type: "clip_multi_view_random"
+    bbox_mode: "dino"
+    clip_model: "./models/clip-vit-large-patch14"
+    clip_threshold: 0.25
+    aggregation: "avg"
+    desc_aggregation: "avg"
+
+    nbv:
+      type: "random"
+
+env:
+    max_steps: 3
+    sectors: 6
+    view_priority: "far"
+
+dataset:
+    root: "./data/pv_dataset"
+    capture_subdir: "pin_capture"
+    image_gt_root: "./data/pv_dataset/image_gt"
+    category_cache_path: "./data/pv_dataset/category_cache.json"
+    split: "val"
+    index_file: "pv_index_50.jsonl"
+    desc_db: "./data/pv_dataset/object_descriptions_with_category.json"
+
+output:
+    root: "./outputs/clip_multi_view_random"
+    save_viz: true
+
+server:
+    qwen_text_url: "http://127.0.0.1:12182/qwen-text"
+    qwen_vl_url: "http://127.0.0.1:12182/qwen-vl"
+    gdino_url: "http://127.0.0.1:12183/groundingdino"
+
+evaluation:
+    unsure_as_negative: true

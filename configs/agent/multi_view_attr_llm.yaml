@@ -1,0 +1,58 @@
+# Multi-View Attribute Query Agent (LLM-Based NBV)
+# 多视角属性拆解：多次观察，需要属性拆解
+# NBV: 使用LLM根据视觉和缺失信息选择下一视角
+
+prompt:
+    version: multi_view_attr
+    extract_file: "extract_v1.yaml"
+    verify_file: "verify_v1.yaml"
+    nav_file: "nav_attr_v1.yaml"
+    category_file: "category_v1.yaml"
+
+method:
+    name: "mllm"
+    agent_type: "multi_view_attr"
+    
+    use_attribute_decomposition: true
+    max_attributes: 8
+    query_mode: "attribute"
+    allow_unsure: false
+    voting_strategy: "majority"
+    match_threshold: 0.75
+    coarse_mode: "infer"
+    bbox_mode: "dino"
+    input_mode: "env"
+    decision_mode: "vote_till_end"
+
+    # --- Modular Config ---
+    fusion:
+      type: "majority"
+
+    nbv:
+      type: "llm"
+
+env:
+    max_steps: 3
+    sectors: 6
+    view_priority: "far"
+
+dataset:
+    root: "./data/pv_dataset"
+    capture_subdir: "pin_capture"
+    image_gt_root: "./data/pv_dataset/image_gt"
+    category_cache_path: "./data/pv_dataset/category_cache.json"
+    split: "val"
+    index_file: "pv_index_50.jsonl"
+    desc_db: "./data/pv_dataset/object_descriptions_with_category.json"
+
+output:
+    root: "./outputs/multi_view_attr_llm"
+    save_viz: true
+
+server:
+    qwen_text_url: "http://127.0.0.1:12182/qwen-text"
+    qwen_vl_url: "http://127.0.0.1:12182/qwen-vl"
+    gdino_url: "http://127.0.0.1:12183/groundingdino"
+
+evaluation:
+    unsure_as_negative: true
