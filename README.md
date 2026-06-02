@@ -3,7 +3,7 @@
 [![Paper](https://img.shields.io/badge/Paper-arXiv%3A2605.30639-red)](https://arxiv.org/abs/2605.30639)
 [![Project Page](https://img.shields.io/badge/Project-Page-blue)](https://avalon-s.github.io/PInVerify)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![FMEA @ CVPR 2026](https://img.shields.io/badge/FMEA-CVPR%202026-blueviolet)](https://github.com/Avalon-S/PInVerify)
+[![FMEA @ CVPR 2026](https://img.shields.io/badge/FMEA-CVPR%202026-blueviolet)](https://foundation-models-meet-embodied-agents.github.io/cvpr2026/)
 [![Status: Preview](https://img.shields.io/badge/status-preview%20%E2%80%94%20not%20tested-orange)](#)
 
 > [!WARNING]
@@ -80,15 +80,17 @@ See [docs/DATASET.md](docs/DATASET.md) for the full data spec.
 
 ### 3. (Optional) Download trained checkpoints
 
-Each fine-tuned variant lives in its own Hugging Face model repository:
+Each fine-tuned variant lives in its own Hugging Face model repository. Overall accuracy (Grounding DINO detection) is shown for both training-data variants (Generic-CoT used in the paper's main Table 6, Specific-CoT in Appendix F):
 
-| Variant | HF Repo | Overall (DINO) |
-|---|---|---|
-| SFT          | `Avalon-S/PInVerify-Qwen3VL-4B-SFT`          | 84.8 |
-| SFT + DPO-200| `Avalon-S/PInVerify-Qwen3VL-4B-SFT-DPO-200`  | see paper |
-| SFT + DPO-400| `Avalon-S/PInVerify-Qwen3VL-4B-SFT-DPO-400`  | 86.0 |
-| SFT + GRPO   | `Avalon-S/PInVerify-Qwen3VL-4B-SFT-GRPO`     | 85.3 |
-| **SFT + GSPO** ⭐ | `Avalon-S/PInVerify-Qwen3VL-4B-SFT-GSPO`     | **85.6** |
+| Variant | HF Repo | Generic-CoT | Specific-CoT |
+|---|---|---|---|
+| SFT           | [`Avalon-S/PInVerify-Qwen3VL-4B-SFT`](https://huggingface.co/Avalon-S/PInVerify-Qwen3VL-4B-SFT)                 | 84.8 | 85.8 |
+| SFT + DPO-200 | [`Avalon-S/PInVerify-Qwen3VL-4B-SFT-DPO-200`](https://huggingface.co/Avalon-S/PInVerify-Qwen3VL-4B-SFT-DPO-200) | —    | 85.9 |
+| SFT + DPO-400 | [`Avalon-S/PInVerify-Qwen3VL-4B-SFT-DPO-400`](https://huggingface.co/Avalon-S/PInVerify-Qwen3VL-4B-SFT-DPO-400) | —    | **86.0** |
+| SFT + GRPO    | [`Avalon-S/PInVerify-Qwen3VL-4B-SFT-GRPO`](https://huggingface.co/Avalon-S/PInVerify-Qwen3VL-4B-SFT-GRPO)       | 85.3 | 85.5 |
+| **SFT + GSPO** ⭐ | [`Avalon-S/PInVerify-Qwen3VL-4B-SFT-GSPO`](https://huggingface.co/Avalon-S/PInVerify-Qwen3VL-4B-SFT-GSPO)   | **85.6** | 85.1 |
+
+⭐ marks the paper's headline result. Best in each column is bolded.
 
 ```bash
 # Download the paper-best checkpoint
