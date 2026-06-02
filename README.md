@@ -4,13 +4,12 @@
 [![Project Page](https://img.shields.io/badge/Project-Page-blue)](https://avalon-s.github.io/PInVerify)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![FMEA @ CVPR 2026](https://img.shields.io/badge/FMEA-CVPR%202026-blueviolet)](https://foundation-models-meet-embodied-agents.github.io/cvpr2026/)
-[![Status: Preview](https://img.shields.io/badge/status-preview%3A%20not%20tested-orange)](#)
+[![Status: Preview](https://img.shields.io/badge/status-early%20preview-orange)](#)
 
-> [!WARNING]
-> **Preview release: not recommended for cloning yet.**
-> This is the initial public drop accompanying the FMEA @ CVPR 2026 workshop paper. The code has **not been end-to-end tested in a clean environment**, and the Hugging Face dataset / model checkpoints are still being uploaded. The **complete, verified release** is planned for **the coming weeks**. Please wait for that tag if you intend to reproduce or build on the benchmark. Star or watch the repo to get notified.
+> [!NOTE]
+> **Early preview.** The code is uploaded and browsable, but it has **not yet been end-to-end tested in a clean environment**, and the Hugging Face dataset and model weights are **not released yet** (still in preparation). The complete, verified release is planned for the coming weeks. Star or watch the repo to get notified.
 
-Official code release for the FMEA @ CVPR 2026 paper
+Official repository for the FMEA @ CVPR 2026 paper
 **"PInVerify: An Offline Embodied Benchmark for Active Instance Verification."**
 
 PInVerify introduces **Active Instance Verification (AIV)**: the agent has already navigated near a candidate object and must now actively select viewpoints around it to decide whether it matches a fine-grained natural-language description. We provide a 3,000-episode offline benchmark with a 6-sector navigation topology, plus reference training-free and LoRA-fine-tuned MLLM agents.
@@ -62,13 +61,9 @@ Optional external dependencies (install if you intend to use the corresponding b
 
 ### 2. Download the dataset
 
-```bash
-# Hugging Face Datasets
-pip install huggingface_hub
-huggingface-cli download Avalon-S/PInVerify-dataset --repo-type dataset --local-dir ./data/pv_dataset
-```
+> **TODO:** the dataset has not been uploaded to Hugging Face yet. Download instructions will be added here once it is public.
 
-Expected layout after download:
+Expected directory layout once released:
 
 ```
 data/pv_dataset/
@@ -86,7 +81,7 @@ See [docs/DATASET.md](docs/DATASET.md) for the full data spec.
 
 ### 3. (Optional) Download trained checkpoints
 
-Each fine-tuned variant lives in its own Hugging Face model repository. Overall accuracy (Grounding DINO detection) is shown for both training-data variants (Generic-CoT used in the paper's main Table 6, Specific-CoT in Appendix F):
+Each fine-tuned variant will live in its own Hugging Face model repository. Overall accuracy (Grounding DINO detection) is shown for both training-data variants (Generic-CoT used in the paper's main Table 6, Specific-CoT in Appendix F):
 
 | Variant | HF Repo | Generic-CoT | Specific-CoT |
 |---|---|---|---|
@@ -99,15 +94,6 @@ Each fine-tuned variant lives in its own Hugging Face model repository. Overall 
 > **TODO:** model repositories are not yet uploaded. Links will be added here once the checkpoints are public.
 
 ⭐ marks the paper's headline result. Best in each column is bolded.
-
-```bash
-# Download the paper-best checkpoint
-huggingface-cli download Avalon-S/PInVerify-Qwen3VL-4B-SFT-GSPO --local-dir ./models/pinverify/sft_gspo
-# Or download all five at once:
-for v in SFT SFT-DPO-200 SFT-DPO-400 SFT-GRPO SFT-GSPO; do
-  huggingface-cli download "Avalon-S/PInVerify-Qwen3VL-4B-$v" --local-dir "./models/pinverify/${v,,}"
-done
-```
 
 ### 4. Run one configuration on the 50-episode smoke split
 
@@ -128,6 +114,8 @@ Results land in `./outputs/<run_name>/metrics.json`.
 ---
 
 ## Reproducing the Paper Results
+
+> Reproduction needs the dataset (and, for the trained-agent table, the model weights), which are not on Hugging Face yet. The commands below are the intended entry points and will be runnable once those land.
 
 ### Main training-free table (Table 5)
 
