@@ -41,14 +41,8 @@ _AGENT_CONFIG_MAP = {
     "single_view_attr":                 "-",
     "single_view_merged":               "-",
     # Direct variants
-    "multi_view_direct_fps":            "fps/maj",
-    "multi_view_direct_llm":            "llm/maj",
-    "multi_view_direct_random":         "random/maj",
     "multi_view_direct_oracle":         "oracle/maj",
     # Attr variants
-    "multi_view_attr_fps":              "fps/maj",
-    "multi_view_attr_llm":              "llm/maj",
-    "multi_view_attr_random":           "random/maj",
     "multi_view_attr_viewhint":         "vh/maj",
     "multi_view_attr_oracle":           "oracle/maj",
     # Skip variants
@@ -58,26 +52,18 @@ _AGENT_CONFIG_MAP = {
     "multi_view_attr_v1_skip_random":   "random/maj+skip",
     # CLIP baselines (desc avg)
     "clip_single_view":                       "-",
-    "clip_multi_view_random":                 "random/-",
-    "clip_multi_view_fps":                    "fps/-",
     "clip_multi_view_adaptive_random":        "random/astop",
     "clip_multi_view_adaptive_fps":           "fps/astop",
     # CLIP baselines (desc merged)
     "clip_single_view_merged":                "-",
-    "clip_multi_view_random_merged":          "random/-",
-    "clip_multi_view_fps_merged":             "fps/-",
     "clip_multi_view_adaptive_random_merged": "random/astop",
     "clip_multi_view_adaptive_fps_merged":    "fps/astop",
     # SigLIP2 baselines (desc avg)
     "siglip2_single_view":                    "-",
-    "siglip2_multi_view_random":              "random/-",
-    "siglip2_multi_view_fps":                 "fps/-",
     "siglip2_multi_view_adaptive_random":     "random/astop",
     "siglip2_multi_view_adaptive_fps":        "fps/astop",
     # SigLIP2 baselines (desc merged)
     "siglip2_single_view_merged":                  "-",
-    "siglip2_multi_view_random_merged":            "random/-",
-    "siglip2_multi_view_fps_merged":               "fps/-",
     "siglip2_multi_view_adaptive_random_merged":   "random/astop",
     "siglip2_multi_view_adaptive_fps_merged":      "fps/astop",
     # V2 Component-level attr (ablation vs V1 atomic)
@@ -87,9 +73,6 @@ _AGENT_CONFIG_MAP = {
     "multi_view_attr_v2_skip":          "llm/maj+skip",
     "multi_view_attr_v2_skip_random":   "random/maj+skip",
     # LoRA fine-tuned (direct mode only)
-    "lora_single_view_direct":          "-",
-    "lora_multi_view_direct_random":    "random/maj",
-    "lora_multi_view_direct_fps":       "fps/maj",
     # Trained end-to-end (no separate NBV/Fusion)
     "trained_e2e":                        "e2e/-",
     "trained_sft":                        "e2e/-",
