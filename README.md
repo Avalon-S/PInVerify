@@ -4,6 +4,8 @@
 
 [![Paper](https://img.shields.io/badge/Paper-arXiv%3A2605.30639-red)](https://arxiv.org/abs/2605.30639)
 [![Project Page](https://img.shields.io/badge/Project-Page-blue)](https://avalon-s.github.io/PInVerify)
+[![Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Avalon--S%2FPInVerify-FFD21E)](https://huggingface.co/datasets/Avalon-S/PInVerify)
+[![Models](https://img.shields.io/badge/%F0%9F%A4%97%20Models-PInVerify--Qwen3VL--4B-FFD21E)](https://huggingface.co/Avalon-S/PInVerify-Qwen3VL-4B)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![FMEA @ CVPR 2026](https://img.shields.io/badge/FMEA-CVPR%202026-blueviolet)](https://foundation-models-meet-embodied-agents.github.io/cvpr2026/)
 
@@ -70,35 +72,19 @@ git checkout data-collection    # or: benchmark-fix
 It ships the detection and repair code, not repaired data: PIN's original data
 is public, so the pipeline can be re-run against it.
 
-## Release progress on `main`
+## Data and weights
 
-The benchmark is released in two stages so the training-free half is usable
-before the trained half is fully uploaded.
+The code is in this repository. Everything it consumes or produces is on the
+Hub, and all of it is public.
 
-### Stage 1: training-free baselines and the test set
-
-| Item | Status |
+| Repository | Contents |
 |---|---|
-| Environment, tracker, fusion, NBV policies (`pver/`) | Released |
-| Training-free agent configs (Tables 4 and 5) | Released, mapped in [configs/agent/README.md](configs/agent/README.md) |
-| Evaluation harness and multi-GPU runner | Released |
-| VLM / detector servers | Released |
-| 3,000-episode test split + indices + caches | Not yet uploaded |
-| Figure scripts | Released |
+| [`Avalon-S/PInVerify`](https://huggingface.co/datasets/Avalon-S/PInVerify) | The test split with all six indices, the SFT and RL training pools with their crops, and the description and attribute caches |
+| [`Avalon-S/PInVerify-Qwen3VL-4B`](https://huggingface.co/Avalon-S/PInVerify-Qwen3VL-4B) | All eight LoRA adapters, by subdirectory. Each keeps its `args.json` and `trainer_state.json`, so the run configuration and the loss curve come with it |
 
-### Stage 2: trained baselines and the fine-tuning data
-
-| Item | Status |
-|---|---|
-| SFT / DPO / GRPO / GSPO data prep and training scripts (`training/`) | Released |
-| Trained-agent configs and evaluation entry point | Released |
-| SFT and RL training pools (15,225 pairs each, plus crops) | Not yet uploaded |
-| LoRA checkpoints, 5 variants | Not yet uploaded |
-| Training curves | Not yet uploaded |
-
-Everything marked "not yet uploaded" is a Hugging Face upload driven from the
-capture machine with [`scripts/prepare_hf_release.py`](scripts/prepare_hf_release.py).
-The code paths for all of it are already here and documented.
+[`scripts/prepare_hf_release.py`](scripts/prepare_hf_release.py) is what pushed
+both, and it verifies a dataset tree before uploading it, so it doubles as a way
+to check a local copy.
 
 The code is released as-is from the machine that produced the paper's numbers.
 It has not been re-run end to end in a clean environment, so expect to adjust
@@ -122,7 +108,8 @@ PInVerify/
 ├── hf_cards/             Hugging Face dataset + model cards, and the upload recipe
 ├── project-page/         Static project website (auto-deployed to GitHub Pages)
 ├── run_all.sh            Training-free evaluation runner (reproduces Tables 4 and 5)
-└── runner.py             Batch evaluation harness
+├── runner.py             Batch evaluation harness
+└── AGENTS.md             Notes for coding agents: the traps that break results quietly
 ```
 
 Paths in the configs assume the dataset at `./data/pv_dataset` and model weights at `./models/<name>`. Both can be overridden per run on the command line.
@@ -152,18 +139,30 @@ procedure**, including the CUDA-version constraint that trips up the first one:
 
 ### 2. Download the dataset
 
-> Stage 1 upload, not yet public. The dataset is assembled on the capture machine and pushed from there; this section will carry the download command once the repo is up.
+```bash
+huggingface-cli download Avalon-S/PInVerify --repo-type dataset \
+    --local-dir ./data/pv_dataset
+```
 
-Expected layout once released:
+Evaluation needs nothing further. To train, unpack the two pools first:
+
+```bash
+cd ./data/pv_dataset/pin_capture
+for pool in train_sft train_rl; do
+    (cd $pool && for f in *.tar; do tar -xf "$f" && rm "$f"; done)
+done
+```
+
+Layout:
 
 ```
 data/pv_dataset/
 ├── pin_capture/
 │   ├── val/<scene>/<episode>/{meta.json, rgb/, mask/, overview.png}
-│   ├── train_sft/...
-│   └── train_rl/...
+│   ├── train_sft/<scene>.tar   one archive per scene, unpack in place
+│   └── train_rl/<scene>.tar
 ├── image_gt/<category>/       Ground-truth bounding-box masks
-├── val/pv_index_{50,100,500,1000,all}.jsonl
+├── val/pv_index_{50,100,500,1000,all,all_7455}.jsonl
 ├── train_sft/{pv_train_sft_index.jsonl, sft_data_v2.jsonl, sft_data_v3.jsonl, crops/, crops_v3/}
 ├── train_rl/{pv_train_rl_index.jsonl, rl_data_v2.jsonl, dpo_data_v3.jsonl, crops_rl/, crops_dpo/}
 ├── attr_cache.json
@@ -172,9 +171,16 @@ data/pv_dataset/
 └── object_descriptions_with_category.json
 ```
 
-`pv_index_all.jsonl` is the 3,000-episode test split used for every number in the paper. See [docs/DATASET.md](docs/DATASET.md) for the full spec.
+`pv_index_all.jsonl` is the 3,000-pair test split behind every number in the
+paper. `pv_index_all_7455.jsonl` is the full pair set over the same captures; it
+runs the same way and costs about two and a half times as much, which is why the
+paper does not report it. See [docs/DATASET.md](docs/DATASET.md) for the full spec.
 
-Publishing it (run this on the machine that holds the captures, not on a copy):
+The training pools were sampled from a larger capture pool that is not published.
+Nothing in the paper uses more than what is here; if you need the larger pool,
+open an issue.
+
+To check a local copy, or to republish from a machine that holds the captures:
 
 ```bash
 python scripts/prepare_hf_release.py check  --data-root <dataset root>
@@ -209,10 +215,9 @@ differences between fine-tuned variants are within noise; the gap that matters i
 against the un-tuned base model, which nearly always answers "no match".
 
 ```bash
-huggingface-cli download Avalon-S/PInVerify-Qwen3VL-4B     --include "generic-cot/gspo/*" --local-dir ./models/pinverify
+huggingface-cli download Avalon-S/PInVerify-Qwen3VL-4B \
+    --include "generic-cot/gspo/*" --local-dir ./models/pinverify
 ```
-
-Not uploaded yet; this section becomes live once the repo is public.
 
 ### 4. Run one configuration on the 50-episode smoke split
 

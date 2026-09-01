@@ -175,15 +175,17 @@ subdirectories named after the training variant:
 | `specific-cot/grpo` | SFT+GRPO | `run_grpo_v3.sh` | 0.855 | 0.884 |
 | `specific-cot/gspo` | SFT+GSPO | `run_gspo_v3.sh` | 0.851 | 0.889 |
 
-Each subdirectory keeps its `args.json`, so the exact ms-swift configuration that
-produced it is recoverable.
+Each subdirectory keeps its `args.json` and `trainer_state.json`, so both the
+ms-swift configuration that produced it and its loss curve are recoverable. Paths
+inside `args.json` and `adapter_config.json` were rewritten to their
+repository-relative form on upload, since the originals pointed at the training
+machine.
 
-See the repository README for the current release status.
-
-Once published, download one and point the LoRA server at it:
+Download one and point the LoRA server at it:
 
 ```bash
-huggingface-cli download Avalon-S/PInVerify-Qwen3VL-4B   --include "generic-cot/gspo/*" --local-dir ./models/pinverify
+huggingface-cli download Avalon-S/PInVerify-Qwen3VL-4B \
+    --include "generic-cot/gspo/*" --local-dir ./models/pinverify
 
 ADAPTER=./models/pinverify/generic-cot/gspo bash scripts/start_multigpu_servers_lora.sh 4
 ```

@@ -4,6 +4,8 @@
 
 [![Paper](https://img.shields.io/badge/Paper-arXiv%3A2605.30639-red)](https://arxiv.org/abs/2605.30639)
 [![Project Page](https://img.shields.io/badge/Project-Page-blue)](https://avalon-s.github.io/PInVerify)
+[![Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Avalon--S%2FPInVerify-FFD21E)](https://huggingface.co/datasets/Avalon-S/PInVerify)
+[![Models](https://img.shields.io/badge/%F0%9F%A4%97%20Models-PInVerify--Qwen3VL--4B-FFD21E)](https://huggingface.co/Avalon-S/PInVerify-Qwen3VL-4B)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![FMEA @ CVPR 2026](https://img.shields.io/badge/FMEA-CVPR%202026-blueviolet)](https://foundation-models-meet-embodied-agents.github.io/cvpr2026/)
 
@@ -53,32 +55,16 @@ git checkout data-collection    # 或 benchmark-fix
 
 `benchmark-fix` 是副产品而非论文声称的贡献。它只发布检测与修复代码，不发布修复后的数据：PIN 原始数据是公开的，流水线可以针对它重新运行。
 
-## `main` 的发布进度
+## 数据与权重
 
-基准分两个阶段发布，这样免训练那一半可以先用起来。
+代码在本仓库，它消费和产出的东西都在 Hugging Face 上，全部公开。
 
-### 阶段 1：免训练基线与测试集
-
-| 内容 | 状态 |
+| 仓库 | 内容 |
 |---|---|
-| 环境、tracker、融合、NBV 策略（`pver/`）| 已发布 |
-| 免训练 agent 配置（表 4 与表 5）| 已发布，映射见 [configs/agent/README.md](configs/agent/README.md) |
-| 评测框架与多卡运行器 | 已发布 |
-| VLM 与检测器服务 | 已发布 |
-| 3000 episode 测试集、索引、缓存 | 尚未上传 |
-| 绘图脚本 | 已发布 |
+| [`Avalon-S/PInVerify`](https://huggingface.co/datasets/Avalon-S/PInVerify) | 测试集与六个索引、SFT 与 RL 训练池及其 crop、描述与属性缓存 |
+| [`Avalon-S/PInVerify-Qwen3VL-4B`](https://huggingface.co/Avalon-S/PInVerify-Qwen3VL-4B) | 全部八个 LoRA 权重，按子目录组织。每个都带 `args.json` 和 `trainer_state.json`，训练配置和 loss 曲线都在里面 |
 
-### 阶段 2：微调基线与训练数据
-
-| 内容 | 状态 |
-|---|---|
-| SFT / DPO / GRPO / GSPO 的数据准备与训练脚本（`training/`）| 已发布 |
-| 微调 agent 配置与评测入口 | 已发布 |
-| SFT 与 RL 训练池（各 15,225 对，含 crop）| 尚未上传 |
-| LoRA 权重，8 个变体 | 尚未上传 |
-| 训练曲线 | 尚未上传 |
-
-所有标记"尚未上传"的内容，都通过 [`scripts/prepare_hf_release.py`](scripts/prepare_hf_release.py) 从采集机器推送到 Hugging Face。对应的代码路径都已经在仓库里，也都有文档。
+两个仓库都是用 [`scripts/prepare_hf_release.py`](scripts/prepare_hf_release.py) 推的，它在上传前会校验数据集目录树，所以也可以拿来检查本地副本是否完整。
 
 代码按产出论文数字时的原样发布，没有在干净环境里重跑过端到端流程，所以路径和服务端口需要按你自己的环境调整。
 
@@ -98,7 +84,8 @@ PInVerify/
 ├── hf_cards/             Hugging Face 数据集与模型卡片，以及上传流程
 ├── project-page/         静态项目页（自动部署到 GitHub Pages）
 ├── run_all.sh            免训练评测运行器（复现表 4 与表 5）
-└── runner.py             批量评测框架
+├── runner.py             批量评测框架
+└── AGENTS.md             给 coding agent 看的说明：那些会悄悄改坏结果的陷阱
 ```
 
 配置中的路径默认数据集在 `./data/pv_dataset`，模型权重在 `./models/<name>`，都可以在命令行按次覆盖。
@@ -126,16 +113,30 @@ pip install -r requirements.txt --extra-index-url https://download.pytorch.org/w
 
 > 阶段 1 的上传尚未公开。数据集在采集机器上组装并从那里推送，仓库公开后这里会给出下载命令。
 
-发布后的目录结构：
+```bash
+huggingface-cli download Avalon-S/PInVerify --repo-type dataset \
+    --local-dir ./data/pv_dataset
+```
+
+只做评测的话到这里就够了。要训练则需要先解包两个训练池：
+
+```bash
+cd ./data/pv_dataset/pin_capture
+for pool in train_sft train_rl; do
+    (cd $pool && for f in *.tar; do tar -xf "$f" && rm "$f"; done)
+done
+```
+
+目录结构：
 
 ```
 data/pv_dataset/
 ├── pin_capture/
 │   ├── val/<scene>/<episode>/{meta.json, rgb/, mask/, overview.png}
-│   ├── train_sft/...
-│   └── train_rl/...
+│   ├── train_sft/<scene>.tar   每个场景一个包，原地解开
+│   └── train_rl/<scene>.tar
 ├── image_gt/<category>/       GT 包围框 mask
-├── val/pv_index_{50,100,500,1000,all}.jsonl
+├── val/pv_index_{50,100,500,1000,all,all_7455}.jsonl
 ├── train_sft/{pv_train_sft_index.jsonl, sft_data_v2.jsonl, sft_data_v3.jsonl, crops/, crops_v3/}
 ├── train_rl/{pv_train_rl_index.jsonl, rl_data_v2.jsonl, dpo_data_v3.jsonl, crops_rl/, crops_dpo/}
 ├── attr_cache.json
@@ -144,9 +145,11 @@ data/pv_dataset/
 └── object_descriptions_with_category.json
 ```
 
-`pv_index_all.jsonl` 是论文所有数字使用的 3000 episode 测试集。完整规格见 [docs/DATASET.md](docs/DATASET.md)。
+`pv_index_all.jsonl` 是论文所有数字使用的 3000 对测试集。`pv_index_all_7455.jsonl` 是同一批采集上的全量配对，跑法完全一样，算力大约是前者的两倍半，论文没有报告它就是因为这个。完整规格见 [docs/DATASET.md](docs/DATASET.md)。
 
-在持有数据的机器上发布（不要在拷贝上做）：
+两个训练池是从一个更大的采集池里采样出来的，那个池子没有发布。论文用到的不超过这里的内容；如果你确实需要更大的池子，提个 issue。
+
+检查本地副本，或者从持有采集数据的机器重新发布：
 
 ```bash
 python scripts/prepare_hf_release.py check  --data-root <数据集根目录> --splits val
@@ -178,8 +181,6 @@ python scripts/prepare_hf_release.py upload --data-root <数据集根目录> --s
 huggingface-cli download Avalon-S/PInVerify-Qwen3VL-4B \
     --include "generic-cot/gspo/*" --local-dir ./models/pinverify
 ```
-
-尚未上传，仓库公开后本节生效。
 
 ### 4. 在 50 episode 小样本集上跑一个配置
 
