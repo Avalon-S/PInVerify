@@ -22,7 +22,7 @@
     {
       "step": 1,
       "observation": {
-        "rgb_path": "/root/autodl-tmp/pv_dataset/pin_capture/val/00853-5cdEh9F2hJL/28/rgb/rgb_s10_far.png"
+        "rgb_path": "./data/pv_dataset/pin_capture/val/00853-5cdEh9F2hJL/28/rgb/rgb_s10_far.png"
       },
       "action": {
         "decision": "Unsure",
@@ -260,7 +260,7 @@
     {
       "step": 2,
       "observation": {
-        "rgb_path": "/root/autodl-tmp/pv_dataset/pin_capture/val/00853-5cdEh9F2hJL/28/rgb/rgb_s4_far.png"
+        "rgb_path": "./data/pv_dataset/pin_capture/val/00853-5cdEh9F2hJL/28/rgb/rgb_s4_far.png"
       },
       "action": {
         "decision": "Unsure",
@@ -452,7 +452,7 @@
     {
       "step": 3,
       "observation": {
-        "rgb_path": "/root/autodl-tmp/pv_dataset/pin_capture/val/00853-5cdEh9F2hJL/28/rgb/rgb_s6_far.png"
+        "rgb_path": "./data/pv_dataset/pin_capture/val/00853-5cdEh9F2hJL/28/rgb/rgb_s6_far.png"
       },
       "action": {
         "decision": "No",

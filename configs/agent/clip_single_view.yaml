@@ -1,6 +1,6 @@
 # CLIP Single-View Baseline
-# 单视角 CLIP cosine similarity baseline
-# 裁剪图 + 描述文本 → cosine similarity → 阈值判断 Yes/No
+# Single-view CLIP cosine-similarity baseline
+# Object crop + description text -> cosine similarity -> threshold gives Yes/No
 
 prompt:
     version: clip_single_view

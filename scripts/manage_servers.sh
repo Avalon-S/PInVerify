@@ -1,6 +1,6 @@
 #!/bin/bash
 # scripts/manage_servers.sh
-# 支持 Qwen 和 SenseNova-SI 两种 VLM 服务器
+# Supports both the Qwen and SenseNova-SI VLM servers
 
 SESSION_NAME="pver_v2"
 
@@ -11,19 +11,19 @@ if ! command -v tmux &> /dev/null; then
 fi
 
 start_qwen() {
-    # 启动 Qwen + GDINO 服务器
+    # Start the Qwen + GDINO servers
     tmux kill-session -t $SESSION_NAME 2>/dev/null
     
     echo "Starting Qwen + GDINO servers..."
     
     tmux new-session -d -s $SESSION_NAME -n "DualServer"
     
-    # --- Top Pane: Qwen (使用 pv_bench 环境) ---
+    # --- Top Pane: Qwen (pv_bench env) ---
     tmux send-keys -t $SESSION_NAME:0.0 "cd ~/pv_benchmark/servers" C-m
     tmux send-keys -t $SESSION_NAME:0.0 "conda activate pv_bench" C-m
     tmux send-keys -t $SESSION_NAME:0.0 "python run_qwen_batched.py" C-m
     
-    # --- Bottom Pane: GDINO (使用 pv_bench 环境) ---
+    # --- Bottom Pane: GDINO (pv_bench env) ---
     tmux split-window -v -t $SESSION_NAME:0
     tmux send-keys -t $SESSION_NAME:0.1 "cd ~/pv_benchmark/servers/GroundingDINO" C-m
     tmux send-keys -t $SESSION_NAME:0.1 "conda activate pv_bench" C-m
@@ -34,21 +34,21 @@ start_qwen() {
 }
 
 start_sensenova() {
-    # 启动 SenseNova-SI + GDINO 服务器
+    # Start the SenseNova-SI + GDINO servers
     tmux kill-session -t $SESSION_NAME 2>/dev/null
     
     echo "Starting SenseNova-SI + GDINO servers..."
     
     tmux new-session -d -s $SESSION_NAME -n "DualServer"
     
-    # --- Top Pane: SenseNova-SI (使用 sensenova 环境) ---
-    # 脚本在 pv_benchmark/servers 下，但需要设置 PYTHONPATH 指向 SenseNova-SI
+    # --- Top Pane: SenseNova-SI (sensenova env) ---
+    # The script lives in servers/, but PYTHONPATH must point at the SenseNova-SI checkout
     tmux send-keys -t $SESSION_NAME:0.0 "cd ~/pv_benchmark/servers" C-m
     tmux send-keys -t $SESSION_NAME:0.0 "conda activate sensenova" C-m
     tmux send-keys -t $SESSION_NAME:0.0 "export PYTHONPATH=${SENSENOVA_PATH:-./SenseNova-SI}:\$PYTHONPATH" C-m
     tmux send-keys -t $SESSION_NAME:0.0 "python run_sensenova_si_server.py" C-m
     
-    # --- Bottom Pane: GDINO (使用 pv_bench 环境) ---
+    # --- Bottom Pane: GDINO (pv_bench env) ---
     tmux split-window -v -t $SESSION_NAME:0
     tmux send-keys -t $SESSION_NAME:0.1 "cd ~/pv_benchmark/servers/GroundingDINO" C-m
     tmux send-keys -t $SESSION_NAME:0.1 "conda activate pv_bench" C-m

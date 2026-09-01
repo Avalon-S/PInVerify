@@ -1,41 +1,41 @@
 # Single-View Attribute Decomposition Agent
-# 单视角属性拆解提问：每个episode只看一次，需要属性拆解
-# 先拆解子属性，依次询问每个属性是否符合，不允许Unsure，最后投票
+# Single-view with attribute decomposition: one look per episode
+# Split the description into attributes, ask about each in turn, no Unsure allowed, then vote
 
 # Prompt Templates
 prompt:
     version: single_view_attr
     extract_file: "extract_v1.yaml"
     verify_file: "verify_v1.yaml"
-    nav_file: null  # 不需要导航
+    nav_file: null  # no navigation needed
     category_file: "category_v1.yaml"
 
 method:
     name: "mllm"
     agent_type: "single_view_attr"
     
-    # 使用属性拆解
+    # use attribute decomposition
     use_attribute_decomposition: true
     max_attributes: 8
     
-    # 属性提问模式
+    # attribute query mode
     query_mode: "attribute"
     
-    # 不允许Unsure
+    # Unsure is not allowed
     allow_unsure: false
     
-    # 投票策略
+    # voting strategy
     voting_strategy: "majority"
     
-    # 属性匹配阈值
+    # attribute match threshold
     match_threshold: 0.75
     
-    # 粗类别模式
+    # coarse category mode
     coarse_mode: "infer"
     bbox_mode: "dino"
     input_mode: "env"
     
-    # 决策模式
+    # decision mode
     decision_mode: "early_exit"
 
 env:

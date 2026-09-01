@@ -4,24 +4,24 @@
 """
 dataset.py
 ---------------------------------
-统一封装 PInVerify 数据加载逻辑：
-- 支持 .jsonl / .json / .json.gz 三种索引格式
-- 提供 load_pairs / load_desc_db / resolve_episode_abs_dir 等通用入口
-- 兼容 val/<scene>/<episode>/meta.json 的数据结构
+Data loading for PInVerify.
+- Reads .jsonl / .json / .json.gz index formats
+- Entry points: load_pairs / load_desc_db / resolve_episode_abs_dir
+- Works with the val/<scene>/<episode>/meta.json layout
 """
 
 import os, json, gzip, random
 from typing import Any, Dict, List, Optional
 
-# ===== 默认路径（Runner 可覆盖） =====
-DEFAULT_DATASET_ROOT   = "autodl-tmp/pv_dataset"
+# ===== Default paths (the runner can override them) =====
+DEFAULT_DATASET_ROOT   = "./data/pv_dataset"
 DEFAULT_CAPTURE_SUBDIR = "pin_capture"
 DEFAULT_SPLIT          = "val"
 DEFAULT_INDEX          = "pv_index_all.jsonl"
 DEFAULT_DESC_DB        = "object_descriptions_with_category.json"
 
 
-# ====== 基础读取函数 ======
+# ====== Basic readers ======
 def read_jsonl(path: str):
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
@@ -45,7 +45,7 @@ def load_json_gz(path: str) -> Any:
         return json.load(f)
 
 
-# ====== 主函数：加载索引 ======
+# ====== Main entry: load the index ======
 def load_pairs(index_path: str, mode: str = "all", num: int = 200, seed: int = 0) -> List[Dict[str, Any]]:
     pairs: List[Dict[str, Any]] = []
 
@@ -77,7 +77,7 @@ def load_pairs(index_path: str, mode: str = "all", num: int = 200, seed: int = 0
     return pairs
 
 
-# ====== 描述库加载 ======
+# ====== Description database ======
 def load_desc_db(path: str) -> Dict[str, Any]:
     if path.endswith(".gz"):
         return load_json_gz(path)
@@ -85,7 +85,7 @@ def load_desc_db(path: str) -> Dict[str, Any]:
         return load_json(path)
 
 
-# ====== Episode 加载相关 ======
+# ====== Episode loading ======
 def resolve_episode_abs_dir(dataset_root: str, capture_subdir: str, episode_rel: str) -> str:
     return os.path.join(dataset_root, capture_subdir, episode_rel)
 
@@ -101,10 +101,10 @@ def _abs_path(ep_root: str, rel_or_abs: Optional[str]) -> Optional[str]:
 
 def load_episode_from_root(ep_root: str) -> Dict[str, Any]:
     """
-    从 episode 根目录加载 meta.json，并为每帧补充：
+    Load meta.json from an episode root and add absolute paths per frame:
       - captures[i]['rgb_path']   = abs(ep_root / captures[i]['rgb'])
-      - captures[i]['depth_path'] = abs(ep_root / captures[i]['depth'])（若存在）
-    不修改原有 'rgb' / 'depth' 字段。
+      - captures[i]['depth_path'] = abs(ep_root / captures[i]['depth']) (when present)
+    The original 'rgb' / 'depth' fields are left untouched.
     """
     meta_path = os.path.join(ep_root, "meta.json")
     if not os.path.exists(meta_path):
@@ -118,7 +118,7 @@ def load_episode_from_root(ep_root: str) -> Dict[str, Any]:
         raise TypeError(f"[dataset] 'captures' should be a list in {meta_path}")
 
     for cap in captures:
-        # 仅按你给的结构：cap['rgb'] / cap['depth']
+        # follows the capture layout: cap['rgb'] / cap['depth']
         cap["rgb_path"] = _abs_path(ep_root, cap.get("rgb"))
         if "depth" in cap:
             cap["depth_path"] = _abs_path(ep_root, cap.get("depth"))
@@ -128,7 +128,7 @@ def load_episode_from_root(ep_root: str) -> Dict[str, Any]:
     return meta
 
 
-# ====== 辅助函数 ======
+# ====== Helpers ======
 def get_descs_for_object(desc_db: Dict[str, Any], object_id: str, pad_to: int = 3) -> List[str]:
     if not object_id or object_id not in desc_db:
         return [""] * pad_to
@@ -143,14 +143,14 @@ def get_descs_for_object(desc_db: Dict[str, Any], object_id: str, pad_to: int = 
     return descs
 
 
-# ====== JSON 保存（可给 debug 用） ======
+# ====== JSON dump (handy when debugging) ======
 def save_json(obj: Any, path: str):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(obj, f, ensure_ascii=False, indent=2)
 
 
-# ====== 自测入口 ======
+# ====== Self-test entry point ======
 if __name__ == "__main__":
     print("[dataset] self-test:")
     pairs = load_pairs(DEFAULT_INDEX, mode="all")

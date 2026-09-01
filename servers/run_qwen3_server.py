@@ -12,18 +12,18 @@ if not hasattr(torch, 'compiler') or not hasattr(torch.compiler, 'is_compiling')
         torch.compiler = type('compiler', (), {})()
     torch.compiler.is_compiling = lambda: False
 
-# ================= 模型加载 =================
-MODEL_PATH = "./models/Qwen3-VL-4B-Instruct"  # 根据实际路径修改
+# ================= Model loading =================
+MODEL_PATH = "./models/Qwen3-VL-4B-Instruct"  # adjust to your local path
 
 print("Loading Qwen3-VL model...")
 model = Qwen3VLForConditionalGeneration.from_pretrained(
     MODEL_PATH, 
     torch_dtype=torch.bfloat16,
-    attn_implementation="flash_attention_2",  # 启用 FlashAttention
+    attn_implementation="flash_attention_2",  # enable FlashAttention
     device_map="auto"
 )
-processor = AutoProcessor.from_pretrained(MODEL_PATH, use_fast=False)  # 禁用 Fast Processor
-print("Qwen3-VL 模型加载完成")
+processor = AutoProcessor.from_pretrained(MODEL_PATH, use_fast=False)  # disable the fast processor
+print("Qwen3-VL model loaded")
 
 app = Flask(__name__)
 
@@ -33,11 +33,11 @@ def decode_image_base64(b64_str: str) -> Image.Image:
 
 def qwen3_generate(messages, max_new_tokens=512):
     """
-    Qwen3-VL 推理函数
+    Qwen3-VL inference.
     messages: [{"role": "user", "content": [...]}]
     """
     with torch.inference_mode():
-        # Qwen3-VL 使用新的 apply_chat_template API
+        # Qwen3-VL uses the newer apply_chat_template API
         inputs = processor.apply_chat_template(
             messages,
             tokenize=True,
@@ -50,14 +50,14 @@ def qwen3_generate(messages, max_new_tokens=512):
         output_ids = model.generate(
             **inputs,
             max_new_tokens=max_new_tokens,
-            do_sample=False,        # 贪婪解码，等效于 temperature=0
-            temperature=None,       # do_sample=False 时不需要
-            top_p=None,             # do_sample=False 时不需要
-            top_k=None,             # do_sample=False 时不需要
+            do_sample=False,        # greedy decoding, equivalent to temperature=0
+            temperature=None,       # unused when do_sample=False
+            top_p=None,             # unused when do_sample=False
+            top_k=None,             # unused when do_sample=False
             repetition_penalty=1.0,
         )
         
-        # 截取生成的部分（去掉输入）
+        # keep only the generated part, dropping the prompt
         generated_ids_trimmed = [
             out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, output_ids)
         ]
@@ -70,7 +70,7 @@ def qwen3_generate(messages, max_new_tokens=512):
         return output_text[0].strip()
 
 
-# ================ 仅文字：/qwen-text =================
+# ================ Text only: /qwen-text =================
 @app.route("/qwen-text", methods=["POST"])
 def qwen_text():
     try:
@@ -93,7 +93,7 @@ def qwen_text():
         return jsonify({"error": str(e)}), 500
 
 
-# ================ 图文：/qwen-vl =================
+# ================ Image + text: /qwen-vl =================
 @app.route("/qwen-vl", methods=["POST"])
 def qwen_vl():
     try:
@@ -119,7 +119,7 @@ def qwen_vl():
         return jsonify({"error": str(e)}), 500
 
 
-# ================ 多图推理：/qwen-vl-multi =================
+# ================ Multi-image: /qwen-vl-multi =================
 @app.route("/qwen-vl-multi", methods=["POST"])
 def qwen_vl_multi():
     """

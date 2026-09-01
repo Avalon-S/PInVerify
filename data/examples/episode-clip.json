@@ -24,7 +24,7 @@
     {
       "step": 1,
       "observation": {
-        "rgb_path": "/root/autodl-tmp/pv_dataset/pin_capture/val/00802-wcojb4TFT35/0/rgb/rgb_s4_far.png"
+        "rgb_path": "./data/pv_dataset/pin_capture/val/00802-wcojb4TFT35/0/rgb/rgb_s4_far.png"
       },
       "action": {
         "decision": "Unsure",
@@ -129,7 +129,7 @@
     {
       "step": 2,
       "observation": {
-        "rgb_path": "/root/autodl-tmp/pv_dataset/pin_capture/val/00802-wcojb4TFT35/0/rgb/rgb_s10_far.png"
+        "rgb_path": "./data/pv_dataset/pin_capture/val/00802-wcojb4TFT35/0/rgb/rgb_s10_far.png"
       },
       "action": {
         "decision": "Unsure",
@@ -228,7 +228,7 @@
     {
       "step": 3,
       "observation": {
-        "rgb_path": "/root/autodl-tmp/pv_dataset/pin_capture/val/00802-wcojb4TFT35/0/rgb/rgb_s8_far.png"
+        "rgb_path": "./data/pv_dataset/pin_capture/val/00802-wcojb4TFT35/0/rgb/rgb_s8_far.png"
       },
       "action": {
         "decision": "Unsure",
@@ -325,7 +325,7 @@
     {
       "step": 4,
       "observation": {
-        "rgb_path": "/root/autodl-tmp/pv_dataset/pin_capture/val/00802-wcojb4TFT35/0/rgb/rgb_s2_far.png"
+        "rgb_path": "./data/pv_dataset/pin_capture/val/00802-wcojb4TFT35/0/rgb/rgb_s2_far.png"
       },
       "action": {
         "decision": "Unsure",
@@ -417,7 +417,7 @@
     {
       "step": 5,
       "observation": {
-        "rgb_path": "/root/autodl-tmp/pv_dataset/pin_capture/val/00802-wcojb4TFT35/0/rgb/rgb_s2_far.png"
+        "rgb_path": "./data/pv_dataset/pin_capture/val/00802-wcojb4TFT35/0/rgb/rgb_s2_far.png"
       },
       "action": {
         "decision": "Unsure",
@@ -509,7 +509,7 @@
     {
       "step": 6,
       "observation": {
-        "rgb_path": "/root/autodl-tmp/pv_dataset/pin_capture/val/00802-wcojb4TFT35/0/rgb/rgb_s2_far.png"
+        "rgb_path": "./data/pv_dataset/pin_capture/val/00802-wcojb4TFT35/0/rgb/rgb_s2_far.png"
       },
       "action": {
         "decision": "Yes",

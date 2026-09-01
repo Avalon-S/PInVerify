@@ -4,26 +4,26 @@
 """
 runner.py
 ---------------------------------
-PInVerify 批量评测主程序（索引驱动 + 可插拔 method）
+PInVerify batch evaluation driver: index-driven, with a pluggable method class.
 
-最终版（包含你的定制要求）：
-1. 视觉来源 = target_object_id 对应的 episode（episode_path / scene / episode）。
-   - 我们加载这条 episode 的 meta/rgb/depth，这一集里拍到的实体就是 target_object_id。
-2. 文本描述来源 = query_object_id。
-   - 我们用 query_object_id 的描述生成 prompt，问模型“画面里是它吗？”
+Semantics:
+1. The imagery comes from the episode of target_object_id (episode_path / scene / episode).
+   Its meta/rgb/depth are loaded; the instance actually captured there is target_object_id.
+2. The description comes from query_object_id.
+   The prompt is built from its description and asks whether that is what the image shows.
 3. label:
-   - 1 → 同一实例 (positive)
-   - 0 → 不是同一实例 (neg_same / neg_diff)
-4. 统计结果里的 object_id = target_object_id（我们实际在看的实例是谁）。
-5. 输出目录结构（不再包含 target_object_id 这一级）：
+   1 -> same instance (positive)
+   0 -> different instance (neg_same / neg_diff)
+4. object_id in the results is target_object_id, i.e. the instance actually being looked at.
+5. Output layout (no target_object_id level):
    <outdir>/<pair_type>/<scene>/<episode>/episode.json
-6. 写 episode.json 时：
-   - 移除 ep_json["descriptions"]（避免冗余/混淆）
-   - 注入 meta_info：
+6. When writing episode.json:
+   ep_json["descriptions"] is dropped to avoid duplication
+   meta_info is injected:
         target_object_id / category / descriptions
         query_object_id  / category / descriptions
-   其中 target_descriptions / query_descriptions 都会写进去，方便对照。
-7. 仍然生成 batch_summary.json 汇总准确率、错误样例等。
+   Both target_descriptions and query_descriptions are stored so they can be compared.
+7. batch_summary.json still aggregates accuracy and failure cases.
 """
 
 import os, argparse, random, time, importlib.util, traceback
@@ -32,14 +32,14 @@ from typing import Any, Dict, List
 from tqdm import tqdm
 from multiprocessing import Process, Queue
 
-# 本地模块
+# local modules
 import dataset as D
 import results as R
 
 
-# ===== 动态加载任意 Method 类 =====
+# ===== Dynamically load any method class =====
 def dynamic_import_class(file_path: str, class_name: str):
-    """从指定文件中加载类"""
+    """Load a class from a given file."""
     if not os.path.isfile(file_path):
         raise FileNotFoundError(f"Method file not found: {file_path}")
     mod_name = os.path.splitext(os.path.basename(file_path))[0]
@@ -53,83 +53,83 @@ def dynamic_import_class(file_path: str, class_name: str):
     return getattr(module, class_name)
 
 
-# ===== 参数定义 =====
+# ===== Arguments =====
 def parse_args():
     ap = argparse.ArgumentParser(description="PInVerify Runner (final semantics + annotated episode.json)")
 
-    # --- 数据相关 ---
+    # --- data ---
     ap.add_argument("--dataset-root", type=str, default=D.DEFAULT_DATASET_ROOT,
-                    help=f"数据根目录（默认 {D.DEFAULT_DATASET_ROOT}）")
+                    help=f"dataset root (default {D.DEFAULT_DATASET_ROOT})")
     ap.add_argument("--capture-subdir", type=str, default=D.DEFAULT_CAPTURE_SUBDIR,
-                    help=f"采集子目录名（默认 {D.DEFAULT_CAPTURE_SUBDIR}）")
+                    help=f"capture subdirectory (default {D.DEFAULT_CAPTURE_SUBDIR})")
     ap.add_argument("--split", type=str, default=D.DEFAULT_SPLIT,
-                    help=f"split 名（默认 {D.DEFAULT_SPLIT}）")
+                    help=f"split name (default {D.DEFAULT_SPLIT})")
     ap.add_argument("--index", type=str, default=D.DEFAULT_INDEX,
-                    help=f"索引文件路径（json/jsonl/json.gz）")
+                    help=f"index file path (json/jsonl/json.gz)")
     ap.add_argument("--desc-db", type=str, default=D.DEFAULT_DESC_DB,
-                    help=f"描述库 JSON 文件路径")
+                    help=f"path to the description database JSON")
 
-    # --- 行为控制 ---
+    # --- behaviour ---
     ap.add_argument("--mode", type=str, choices=["all", "random"], default="all",
-                    help="抽样模式：all | random")
+                    help="sampling mode: all | random")
     ap.add_argument("--num", type=int, default=200,
-                    help="当 --mode=random 时抽样数量")
-    ap.add_argument("--seed", type=int, default=0, help="随机种子")
+                    help="number of samples when --mode=random")
+    ap.add_argument("--seed", type=int, default=0, help="random seed")
     ap.add_argument("--max-episodes", type=int, default=0,
-                    help="最多评估多少个 pair（0 表示不限制）")
+                    help="cap on the number of pairs (0 means no cap)")
 
-    # --- 输出控制 ---
+    # --- output ---
     ap.add_argument("--outdir", type=str, default="./pv_out",
-                    help="结果输出根目录")
+                    help="output root directory")
     ap.add_argument("--save_viz", action="store_true",
-                    help="保存可视化与中间产物（step 目录）")
+                    help="save visualizations and per-step intermediates")
 
-    # --- method 选择（可插拔）---
+    # --- method selection (pluggable) ---
     ap.add_argument("--method-file", type=str, default="./methods_qwen_vl.py",
-                    help="包含方法类的 .py 文件路径")
+                    help="path to the .py file holding the method class")
     ap.add_argument("--method-class", type=str, default="QwenVLMethod",
-                    help="方法类名（文件内的类）")
+                    help="name of the method class inside that file")
 
-    # --- Qwen 服务接口（供方法类用）---
+    # --- Qwen server endpoints (used by the method class) ---
     ap.add_argument("--qwen-text-url", type=str, default="http://127.0.0.1:12182/qwen-text",
-                    help="Qwen 文本接口 URL")
+                    help="Qwen text endpoint URL")
     ap.add_argument("--qwen-vl-url", type=str, default="http://127.0.0.1:12182/qwen-vl",
-                    help="Qwen 图文接口 URL")
+                    help="Qwen vision-language endpoint URL")
 
-    # --- 策略与裁剪 / 推理细节 ---
+    # --- policy, cropping and inference details ---
     ap.add_argument("--use-category", action="store_true",
-                    help="把 query_object_category 作为 class_text 传给模型（给模型一个粗类别引导）")
+                    help="pass query_object_category to the model as class_text, a coarse category hint")
     ap.add_argument("--max-steps", type=int, default=3,
-                    help="单 episode 运行步数（多视角方法可能会用到）")
+                    help="steps per episode (used by the multi-view methods)")
     ap.add_argument("--crop-mode", type=str, choices=["tight", "expand"], default="tight",
-                    help="核验裁剪模式：tight | expand")
+                    help="verification crop mode: tight | expand")
     ap.add_argument("--pad", type=int, default=3,
-                    help="tight 模式下裁剪 padding（像素）")
+                    help="crop padding in pixels for tight mode")
     ap.add_argument("--min-side", type=int, default=320,
-                    help="expand 模式下裁剪后短边最小像素")
+                    help="minimum short side in pixels after an expand crop")
     ap.add_argument("--attr-k", type=int, default=8,
-                    help="attr式方法里单条描述最大属性数（默认8）")
+                    help="max attributes per description in the attribute methods (default 8)")
 
-    # --- detector 模式 ---
+    # --- detector mode ---
     ap.add_argument("--detector-mode",
                     type=str,
                     choices=["gdino", "bbox"],
                     default="gdino",
-                    help="目标框来源：gdino=GroundingDINO检测，bbox=直接用meta.json里的mask_bbox_xyxy")
+                    help="box source: gdino = GroundingDINO detection, bbox = mask_bbox_xyxy from meta.json")
 
-    # --- coarse 类别缓存（方法里可能用）---
+    # --- coarse category cache (used by some methods) ---
     ap.add_argument("--coarse-cache", type=str, default="",
-                    help="粗类别缓存 JSON 路径（可选）")
+                    help="path to the coarse category cache JSON (optional)")
 
-    # --- 统计控制 ---
+    # --- scoring ---
     ap.add_argument("--unsure-as-negative", action="store_true",
-                    help="把 Unsure 当作负类(0)。否则 Unsure 样本不计入准确率/召回率计算。")
+                    help="count Unsure as negative (0); otherwise Unsure episodes are excluded from the metrics")
 
-    # --- 并行控制 ---
+    # --- parallelism ---
     ap.add_argument("--num-workers", type=int, default=1,
-                    help="并行进程数（1 表示单进程）")
+                    help="worker processes (1 means single process)")
     ap.add_argument("--devices", type=str, default="",
-                    help="逗号分隔的 GPU id 列表，比如 '0,1,2,3'；留空则不绑定 CUDA_VISIBLE_DEVICES")
+                    help="comma-separated GPU ids, e.g. '0,1,2,3'; empty leaves CUDA_VISIBLE_DEVICES alone")
     return ap.parse_args()
 
 
@@ -137,21 +137,21 @@ def ensure_dir(d: str):
     os.makedirs(d, exist_ok=True)
 
 
-# ===== Episode 相对路径解析 =====
+# ===== Episode path resolution =====
 def _episode_rel_from_index_record(rec: Dict[str, Any]) -> str:
     """
-    把 index 记录里的 episode 规范成 "val/<scene>/<episode>" 这种短路径，
-    用于输出结构和日志显示。
+    Normalize an index record's episode into the short "val/<scene>/<episode>" form,
+    used for the output layout and log lines.
     """
     ep_path = rec.get("episode_path")
     if isinstance(ep_path, str) and ep_path:
         parts = ep_path.strip("/").split("/")
-        # 典型: ["pin_capture","val","<scene>","<episode>"]
+        # typical: ["pin_capture", "val", "<scene>", "<episode>"]
         if len(parts) >= 4:
             return "/".join(parts[1:])  # -> "val/<scene>/<episode>"
         return "/".join(parts)
 
-    # 回退方案（理论上不该走到这里）
+    # fallback, should not normally be reached
     split  = str(rec.get("split")  or "val").strip("/")
     scene  = str(rec.get("scene")  or rec.get("scene_id") or "").strip("/")
     ep_id  = rec.get("episode")    or rec.get("episode_id") or rec.get("ep_id") or ""
@@ -161,8 +161,8 @@ def _episode_rel_from_index_record(rec: Dict[str, Any]) -> str:
 
 def _episode_abs_dir(dataset_root: str, rec: Dict[str, Any]) -> str:
     """
-    根据 record 推出该 episode 在磁盘上的绝对路径。
-    优先使用 episode_path。
+    Resolve the absolute on-disk path of the episode for this record.
+    episode_path takes precedence.
     """
     ep_rel = rec.get("episode_path")
     if isinstance(ep_rel, str) and ep_rel:
@@ -176,7 +176,7 @@ def _episode_abs_dir(dataset_root: str, rec: Dict[str, Any]) -> str:
     return os.path.join(dataset_root, "pin_capture", split, scene, ep_id)
 
 
-# ===== 把评测结果分桶，统计 correct / wrong
+# ===== Bucket the results into correct / wrong
 def _group_results_by_type_and_correctness(res_list: List[Dict[str, Any]]) -> Dict[str, Dict[str, List[Dict[str, Any]]]]:
     grouped: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
     for r in res_list:
@@ -199,25 +199,25 @@ def _save_episode_json(out_ep: str,
                        query_object_cat: str,
                        query_descs: List[str]):
     """
-    写 episode.json:
-    - 去掉 ep_json["descriptions"]（避免和我们自己的 meta_info 重复）
-    - 去掉 ep_json["step"]["class_gate"]（我们现在的方法不再做粗类别 gating，这个字段如果存在就视为旧逻辑的残留）
-    - 注入 meta_info，记录 target/query 的 id / category / descriptions
+    Write episode.json:
+    - drop ep_json["descriptions"], which duplicates meta_info
+    - drop ep_json["step"]["class_gate"]: coarse-category gating is gone, so the field is a leftover
+    - inject meta_info with the target/query id, category and descriptions
     """
 
-    # 复制，避免原对象被外部继续使用时被我们改坏
+    # copy so the caller's object is not mutated
     safe_json = dict(ep_json)
 
-    # 1. descriptions 字段不要写进去（我们自己会放 meta_info 里的两边描述）
+    # 1. skip the descriptions field; both sides go into meta_info instead
     if "descriptions" in safe_json:
         del safe_json["descriptions"]
 
-    # 2. 如果 step.class_gate 存在，删除它
+    # 2. drop step.class_gate if present
     step_block = safe_json.get("step")
     if isinstance(step_block, dict) and "class_gate" in step_block:
         del step_block["class_gate"]
 
-    # 3. 注入我们自己的对照信息
+    # 3. inject the comparison metadata
     safe_json["meta_info"] = {
         "target_object_id": target_object_id,
         "target_object_category": target_object_cat,
@@ -228,7 +228,7 @@ def _save_episode_json(out_ep: str,
         "query_descriptions": query_descs
     }
 
-    # 4. 写盘
+    # 4. write to disk
     ensure_dir(out_ep)
     with open(os.path.join(out_ep, "episode.json"), "w", encoding="utf-8") as f:
         import json
@@ -243,19 +243,19 @@ def _run_one_pair(rec: Dict[str, Any],
                   rng_for_worker_random: random.Random,
                   idx_for_name: str = "") -> Dict[str, Any]:
     """
-    核心执行逻辑（单条 pair）。
+    Core evaluation of a single pair.
 
-    最终语义：
+    Semantics:
     - target_object_id / target_object_category:
-        这条 episode 真正拍到的那个物体（画面里的实例）。
+        the object actually captured in this episode, i.e. the instance in the image.
     - query_object_id / query_object_category:
-        我们声称要找的物体（prompt 使用它）。
-    - 模型判断：画面里的 target_object_id 是否就是 query_object_id ?
+        the object being searched for, whose description drives the prompt.
+    - The model decides whether the target_object_id in the image is the query_object_id.
     - label:
-        1 -> 同一实例 (positive)
-        0 -> 不同实例 (neg_same / neg_diff)
+        1 -> same instance (positive)
+        0 -> different instance (neg_same / neg_diff)
 
-    返回值会被用于 summary 和 batch_summary.json。
+    The return value feeds the summary and batch_summary.json.
     """
 
     pair_type   = rec.get("pair_type", "unknown")
@@ -264,35 +264,35 @@ def _run_one_pair(rec: Dict[str, Any],
         raise RuntimeError("Record missing label")
     label_int   = int(label_raw)
 
-    # 1. 定位 episode 目录（视觉来源 = target_object_id 的那一集）
+    # 1. locate the episode directory (imagery comes from target_object_id)
     episode_abs = _episode_abs_dir(args.dataset_root, rec)
     if not os.path.isdir(episode_abs):
         raise FileNotFoundError(f"episode_abs missing: {episode_abs}")
 
-    # 2. 读 meta.json + captures
+    # 2. read meta.json and its captures
     meta = D.load_episode_from_root(episode_abs)
 
-    # 3. 谁在画面里（视觉对象）
+    # 3. which instance is in the image
     target_object_id  = str(rec.get("target_object_id") or "")
     target_object_cat = str(rec.get("target_object_category") or "")
 
-    # 4. 我们声称要找谁（query / prompt）
+    # 4. which instance is being searched for (query / prompt)
     query_object_id   = str(rec.get("query_object_id") or "")
     query_object_cat  = str(rec.get("query_object_category") or "")
 
-    # 5. 从描述库取两边的描述
-    #    target_descriptions: 画面里这个具体实例的描述
-    #    query_descriptions : 我们要找的那只实例的描述（也是喂给模型的描述）
+    # 5. fetch both descriptions from the database
+    #    target_descriptions: description of the instance in the image
+    #    query_descriptions : description of the searched instance, the one shown to the model
     target_descs = D.get_descs_for_object(desc_db, target_object_id, pad_to=3)
     query_descs  = D.get_descs_for_object(desc_db, query_object_id,  pad_to=3)
 
-    # 6. 构建 class_text（如果开启 use-category，就告诉模型“我要找的是哪一类”）
+    # 6. build class_text: with --use-category the model is told which coarse category to expect
     if args.use_category:
         class_text = query_object_cat or desc_db.get(query_object_id, {}).get("object_category", "") or ""
     else:
         class_text = ""
 
-    # 7. 输出目录（注意：不再包含 target_object_id 这一层）
+    # 7. output directory (no target_object_id level any more)
     episode_rel = _episode_rel_from_index_record(rec)
     parts = episode_rel.strip("/").split("/")
     if len(parts) >= 3:
@@ -311,13 +311,13 @@ def _run_one_pair(rec: Dict[str, Any],
         )
     ensure_dir(out_ep)
 
-    # 8. 给 method 一个可复现的随机值（方法内部如果需要随机选 near/far 等）
+    # 8. reproducible random value for methods that pick near/far at random
     rng_val = rng_for_worker_random.randint(0, 2**31 - 1)
-    _ = rng_val  # 我们留着占位，未来如果 method 需要我们就可以把这个塞进 args 或额外参数
+    _ = rng_val  # kept as a placeholder for methods that need it
 
-    # 9. 实际调用 method 执行多步推理
-    #    注意：我们把 query_descs 作为 raw_descs 传给它，
-    #    因为我们的问题是“这是不是 query_object_id？”
+    # 9. run the method's multi-step inference
+    #    query_descs is passed as raw_descs because the question is
+    #    whether the image shows query_object_id
     ep_json = method.run_episode(
         meta=meta,
         class_text=class_text,
@@ -326,7 +326,7 @@ def _run_one_pair(rec: Dict[str, Any],
         args=args
     )
 
-    # 10. 把 episode.json 写到磁盘，包含 target/query 的元信息和双边描述
+    # 10. write episode.json with the target/query metadata and both descriptions
     _save_episode_json(
         out_ep=out_ep,
         ep_json=ep_json,
@@ -338,7 +338,7 @@ def _run_one_pair(rec: Dict[str, Any],
         query_descs=query_descs
     )
 
-    # 11. 解析最终决策
+    # 11. parse the final decision
     final_block = ep_json.get("final") or {}
     decision = (final_block.get("decision") or "").strip().title()  # "Yes"/"No"/"Unsure"
 
@@ -347,14 +347,14 @@ def _run_one_pair(rec: Dict[str, Any],
     elif decision == "No":
         pred = 0
     else:
-        # Unsure：如果用户没让我们把Unsure当负类，就直接丢掉这条，不计入 summary
+        # Unsure: unless --unsure-as-negative is set, drop the episode from the summary
         pred = 0 if args.unsure_as_negative else None
 
     if pred is None:
-        # 这条不进入最终 summary
+        # excluded from the summary
         raise RuntimeError("Prediction is None (Unsure not counted)")
 
-    # 12. 返回给 summary 使用
+    # 12. hand the result to the summary
     return {
         "pred": int(pred),
         "label": label_int,
@@ -362,7 +362,7 @@ def _run_one_pair(rec: Dict[str, Any],
         "episode_rel": episode_rel,
         "scene": parts[-2] if len(parts) >= 2 else "",
         "episode_id": parts[-1] if len(parts) >= 1 else "",
-        # 我们真正在看的实例是谁
+        # the instance actually being looked at
         "object_id": target_object_id,
     }
 
@@ -374,12 +374,12 @@ def _run_shard(shard_id: int,
                desc_db: Dict[str, Any],
                out_queue: Queue):
     """
-    一个进程负责跑一片 pairs：
-      - 每完成 1 条 pair → out_queue.put({"type":"tick","shard":id})
-      - 全部完成后 → out_queue.put({"type":"done","shard":id,"results":[...]}).
+    One worker process evaluates one shard of pairs:
+      - after each pair: out_queue.put({"type": "tick", "shard": id})
+      - when finished: out_queue.put({"type": "done", "shard": id, "results": [...]}).
     """
 
-    # 绑定设备 (CUDA_VISIBLE_DEVICES)
+    # pin the device (CUDA_VISIBLE_DEVICES)
     if device != "":
         os.environ["CUDA_VISIBLE_DEVICES"] = device
 
@@ -387,12 +387,12 @@ def _run_shard(shard_id: int,
 
     rng_for_worker = random.Random(args.seed + shard_id * 9973)
 
-    # 动态加载 method
+    # load the method class
     MethodClass = dynamic_import_class(args.method_file, args.method_class)
     try:
         method = MethodClass(args.qwen_text_url, args.qwen_vl_url)
     except TypeError:
-        # 有的实现也许不要求两个URL
+        # some implementations do not need both URLs
         method = MethodClass()
 
     partial_results: List[Dict[str, Any]] = []
@@ -422,7 +422,7 @@ def main():
     args = parse_args()
     random.seed(args.seed)
 
-    # 解析 index / desc_db 实际路径
+    # resolve the index and desc_db paths
     index_path = args.index if os.path.isabs(args.index) else os.path.join(args.dataset_root, args.split, args.index)
     desc_path  = args.desc_db if os.path.isabs(args.desc_db) else os.path.join(args.dataset_root, args.split, args.desc_db)
 
@@ -433,7 +433,7 @@ def main():
 
     ensure_dir(args.outdir)
 
-    # 加载 pairs & 描述库
+    # load pairs and the description database
     pairs = D.load_pairs(index_path, mode=args.mode, num=args.num, seed=args.seed)
     desc_db = D.load_desc_db(desc_path)
 
@@ -452,7 +452,7 @@ def main():
     if args.save_viz:
         print(f"[Runner] save_viz is ON")
 
-    # ===== 单进程路径 =====
+    # ===== Single-process path =====
     if args.num_workers <= 1:
         print("[Runner] Mode: single-process")
 
@@ -501,10 +501,10 @@ def main():
         print(f"[Runner] Done in {time.time() - t_start:.2f}s. Output → {args.outdir}")
         return
 
-    # ===== 多进程路径 =====
+    # ===== Multi-process path =====
     num_workers = max(2, int(args.num_workers))
 
-    # 准备多 GPU 绑定列表
+    # build the per-worker GPU binding list
     if args.devices.strip():
         devices = [d.strip() for d in args.devices.split(",") if d.strip() != ""]
         if len(devices) < num_workers:
@@ -514,7 +514,7 @@ def main():
         devices = [""] * num_workers
         print(f"[Runner] Mode: multi-process (single GPU/CPU) workers={num_workers} device=inherit")
 
-    # 均匀切分 pairs -> shards
+    # split pairs evenly into shards
     shards: List[List[Dict[str, Any]]] = [[] for _ in range(num_workers)]
     for i, item in enumerate(pairs):
         shards[i % num_workers].append(item)
@@ -526,7 +526,7 @@ def main():
     procs: List[Process] = []
     t0 = time.time()
 
-    # 启动子进程
+    # start the workers
     for sid in range(num_workers):
         dev = devices[sid % len(devices)]
         p = Process(
@@ -542,7 +542,7 @@ def main():
     cls_results_all: List[Dict[str, Any]] = []
     done_workers = 0
 
-    # 主进程负责合并结果 + 显示整体进度
+    # the parent merges results and shows overall progress
     while done_workers < num_workers:
         msg = q.get()
         mtype = msg.get("type", "")
@@ -553,11 +553,11 @@ def main():
             done_workers += 1
     pbar.close()
 
-    # 等子进程退出
+    # wait for the workers to exit
     for p in procs:
         p.join()
 
-    # 汇总
+    # aggregate
     if cls_results_all:
         summary = R.summarize_classification(cls_results_all)
         R.print_cls_summary(summary)

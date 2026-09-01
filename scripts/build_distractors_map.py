@@ -3,13 +3,13 @@
 """
 build_distractors_map.py
 -------------------------------
-从 raw episode index 构建 distractor 映射表。
-每个 target object 关联同类 (neg_same) 和异类 (neg_diff) distractor。
+Build the distractor map from a raw episode index.
+Each target object is paired with same-category (neg_same) and cross-category (neg_diff) distractors.
 
-前置条件:
-  已生成 pv_index_raw.jsonl (用 IndexBuilder)
+Prerequisite:
+  pv_index_raw.jsonl already built (via IndexBuilder)
 
-用法:
+Usage:
   python scripts/build_distractors_map.py \
       --index ./data/pv_dataset/train/pv_index_raw.jsonl \
       --output ./data/pv_dataset/train/object_goal_distractors_map.json \

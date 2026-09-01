@@ -8,7 +8,7 @@ Key improvements over evaluate_multigpu.py:
 3. No need for FJSP - simple work-stealing queue
 
 Usage:
-    python scripts/evaluate_multigpu_dynamic.py --config configs/agent/multi_view_attr_llm.yaml \
+    python scripts/evaluate_multigpu_dynamic.py --config configs/agent/multi_view_attr_adaptive_llm.yaml \
         --num_gpus 4 \
         --gpu_ids 0,1,2,3 \
         --base_ports 12182,12282,12382,12482

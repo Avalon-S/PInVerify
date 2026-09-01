@@ -270,37 +270,16 @@ def get_config_path_and_name():
              
         config_dir = os.path.dirname(config_arg)
         config_name = os.path.basename(config_arg)
-        
-        # FIX: Check for and fix filenames with leading spaces
-        # try:
-        #     for fname in os.listdir(config_dir):
-        #         if fname.startswith(" "):
-        #             clean_name = fname.strip()
-        #             old_path = os.path.join(config_dir, fname)
-        #             new_path = os.path.join(config_dir, clean_name)
-        #             print(f"DEBUG: Renaming corrupted file '{fname}' to '{clean_name}'")
-        #             # Rename (this works if running with write perms)
-        #             os.rename(old_path, new_path)
-        # except Exception as e:
-        #     print(f"DEBUG: Failed to attempt rename: {e}")
-            
+
         return config_dir, config_name
     
     # Default
     script_dir = os.path.dirname(os.path.abspath(__file__))
     default_dir = os.path.join(script_dir, '..', 'configs', 'agent')
-    return os.path.abspath(default_dir), 'multi_view_attr'
+    return os.path.abspath(default_dir), 'multi_view_attr_adaptive_llm'
 
 # Get config path/name before hydra initialization
 _config_path, _config_name = get_config_path_and_name()
-
-# DEBUG: Print contents of config directory to verify file visibility
-print(f"DEBUG: Config Path resolved to: {_config_path}")
-print(f"DEBUG: Looking for config name: {_config_name}")
-try:
-    print(f"DEBUG: Directory contents: {os.listdir(_config_path)}")
-except Exception as e:
-    print(f"DEBUG: Error listing directory: {e}")
 
 
 @hydra.main(version_base=None, config_path=_config_path, config_name=_config_name)
@@ -337,8 +316,6 @@ def main(cfg: DictConfig):
         log.info(f"Index {index_candidate} not found. Attempting to build standard index...")
         builder = IndexBuilder(cfg.dataset.root, cfg.dataset.capture_subdir, cfg.dataset.split)
         builder.build_index(index_candidate)
-        # Assuming we need negative sampling too? 
-        # For now simpler logic: Just build basic index.
         
     if not os.path.exists(index_candidate):
         log.error(f"Failed to find or build index: {index_candidate}")
@@ -509,10 +486,8 @@ def main(cfg: DictConfig):
         # Extract query text for Visualization
         qt = d_item.get("query_descriptions") or d_item.get("text_pos")
         if not qt and obj_id in desc_db:
-             # Structure of desc_db: {obj_id: [desc1, desc2, desc3], ...} 
-             # Or {obj_id: {text: ...}}? Check file format. 
-             # Standard provided format is often {obj_id: [list of strings]} or similar.
-             # User said: "each object_id three sentences".
+             # desc_db maps an object id to its three descriptions, either as
+             # a list or as a dict holding a "descriptions" key.
              qt = desc_db[obj_id]
              # Handle if it's a dict
              if isinstance(qt, dict):
@@ -521,14 +496,9 @@ def main(cfg: DictConfig):
         if not qt:
              qt = ["No description found"]*3
         
-        # Windows Path Fix for Visualizer
-        # If env is running on Windows but index has /root/ paths, visualizer needs valid paths or data
-        # We can't change 'dataset' since Env uses it.
-        # But we can patch transcript observations for visualizer OR just fix it in Visualizer?
-        # Better to just not rely on absolute path if we can resolve it.
-        # But Env returns absolute rgb_path.
-        # Let's fix it in Visualizer by checking os.exists? Already does.
-        # The issue is Env constructs path using /root/...
+        # The environment returns absolute rgb paths. The visualizer checks
+        # whether a path exists before using it, so an index produced on a
+        # different machine degrades gracefully rather than failing here.
         
 
 
@@ -583,9 +553,6 @@ def main(cfg: DictConfig):
             
             # Use INPUT observation (not output) for transcript to match action/crop
             rgb_p = input_rgb_path
-            if os.name == 'nt' and rgb_p.startswith("/root"):
-                 rgb_p = rgb_p.replace("./data/pv_dataset", "e:/pv_benchmark/autodl-tmp/pv_dataset")
-                 rgb_p = rgb_p.replace("/", "\\")
             
             # Reconstruct Step Data - use INPUT obs for correct alignment
             step_record = {

@@ -407,10 +407,10 @@ def generate_subsets(full_index_path, output_dir, sizes=(50, 100, 500, 1000), se
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", required=True, help="Dataset root (e.g. autodl-tmp/pv_dataset)")
+    parser.add_argument("--root", required=True, help="Dataset root (e.g. ./data/pv_dataset)")
     parser.add_argument("--distractors-map", required=True,
                         help="Path to object_goal_distractors_map.json")
-    parser.add_argument("--out-dir", required=True, help="Output directory for index files (e.g. autodl-tmp/pv_dataset/val)")
+    parser.add_argument("--out-dir", required=True, help="Output directory for index files (e.g. ./data/pv_dataset/val)")
     parser.add_argument("--subsets", type=int, nargs="*", default=[50, 100, 500, 1000], help="Subset sizes to generate")
     parser.add_argument("--max-episodes", type=int, default=None,
                         help="Max raw episodes before pair generation (e.g. 1000 -> 3000 total pairs). "

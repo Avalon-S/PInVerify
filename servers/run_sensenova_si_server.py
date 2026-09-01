@@ -1,18 +1,18 @@
 """
 SenseNova-SI-1.2-InternVL3-8B Server
-与 run_qwen2_5_server.py 接口兼容，可直接替换使用
+Drop-in replacement for the Qwen server: same HTTP interface.
 
-使用前需要激活 SenseNova conda 环境:
+Activate the SenseNova conda environment first:
     conda activate sensenova
     export PYTHONPATH=./SenseNova-SI:$PYTHONPATH
 
-启动命令:
+Launch:
     python run_sensenova_si_server.py
 
-端口: 12182 (与 Qwen 相同，只运行一个)
+Port: 12182 (same as Qwen; run only one of them)
 """
 
-# ================= 设置离线模式 (必须在 transformers 相关 import 之前) =================
+# ============ Offline mode (must run before any transformers import) ============
 import os
 os.environ["HF_HUB_OFFLINE"] = "1"
 os.environ["TRANSFORMERS_OFFLINE"] = "1"
@@ -24,19 +24,19 @@ import torch
 from PIL import Image
 from flask import Flask, request, jsonify
 
-# SenseNova-SI 使用其原生 API
+# SenseNova-SI uses its own API
 from sensenova_si import get_model
 
-# ================= 模型加载 =================
+# ================= Model loading =================
 MODEL_PATH = "./models/SenseNova-SI-1.2-InternVL3-8B"
 
 print(f"Loading SenseNova-SI model from: {MODEL_PATH}")
 print("Note: OFFLINE mode enabled - loading from local files only")
 
-# 使用 SenseNova-SI 的 get_model 加载
+# load through SenseNova-SI's get_model
 model = get_model(MODEL_PATH)
 
-print("SenseNova-SI-1.2-InternVL3-8B 模型加载完成")
+print("SenseNova-SI-1.2-InternVL3-8B model loaded")
 
 app = Flask(__name__)
 
@@ -53,21 +53,21 @@ def sensenova_generate(image_path_or_pil: Image.Image, prompt: str) -> str:
     import tempfile
     import os
     
-    # SenseNova-SI 需要图片路径，如果传入 PIL Image 则先保存
+    # SenseNova-SI wants a file path, so a PIL image is written to a temp file first
     if isinstance(image_path_or_pil, Image.Image):
         with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as f:
             image_path_or_pil.save(f, format="JPEG")
             image_path = f.name
         try:
-            # 确保 prompt 包含 <image> token
+            # make sure the prompt carries an <image> token
             if "<image>" not in prompt:
                 prompt = "<image>\n" + prompt
             response = model.generate(prompt, images=[image_path])
             return response.strip()
         finally:
-            os.unlink(image_path)  # 清理临时文件
+            os.unlink(image_path)  # clean up the temp file
     else:
-        # 直接是路径
+        # already a path
         if "<image>" not in prompt:
             prompt = "<image>\n" + prompt
         response = model.generate(prompt, images=[image_path_or_pil])
@@ -83,7 +83,7 @@ def sensenova_generate_text_only(prompt: str) -> str:
 
 
 
-# ================ 仅文字：/qwen-text (兼容接口名) =================
+# ============ Text only: /qwen-text (name kept for compatibility) ============
 @app.route("/qwen-text", methods=["POST"])
 def qwen_text():
     """Text-only endpoint, compatible with existing client."""
@@ -101,7 +101,7 @@ def qwen_text():
         return jsonify({"error": str(e)}), 500
 
 
-# ================ 图文：/qwen-vl (兼容接口名) =================
+# ============ Image + text: /qwen-vl (name kept for compatibility) ============
 @app.route("/qwen-vl", methods=["POST"])
 def qwen_vl():
     """Vision-Language endpoint, compatible with existing client."""
@@ -122,7 +122,7 @@ def qwen_vl():
         return jsonify({"error": str(e)}), 500
 
 
-# ================ 原生接口名 (可选) =================
+# ================ Native endpoint names (optional) ================
 @app.route("/internvl-vl", methods=["POST"])
 def internvl_vl():
     """Native InternVL endpoint name."""
@@ -135,7 +135,7 @@ def health():
     return jsonify({"status": "ok", "model": "SenseNova-SI-1.2-InternVL3-8B"})
 
 
-# ================ 多图推理：/qwen-vl-multi =================
+# ================ Multi-image: /qwen-vl-multi ================
 @app.route("/qwen-vl-multi", methods=["POST"])
 def qwen_vl_multi():
     """

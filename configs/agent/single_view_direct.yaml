@@ -1,37 +1,37 @@
 # Single-View Direct Query Agent
-# 单视角直接提问：每个episode只看一次，不需要属性拆解
-# 将三个prompt依次提问Yes/No，不允许Unsure，最后投票得出结果
+# Single-view direct query: one look per episode, no attribute decomposition
+# Ask the three description sentences in turn as Yes/No, no Unsure allowed, then vote
 
 # Prompt Templates (from prompts/ folder)
 prompt:
     version: single_view_direct
-    extract_file: null  # 不使用属性拆解
+    extract_file: null  # no attribute decomposition
     verify_file: "verify_v1.yaml"
-    nav_file: null  # 不需要导航
+    nav_file: null  # no navigation needed
     category_file: "category_v1.yaml"
 
 method:
     name: "mllm"
     agent_type: "single_view_direct"
     
-    # 不使用属性拆解
+    # no attribute decomposition
     use_attribute_decomposition: false
     
-    # 直接提问模式
+    # direct query mode
     query_mode: "direct"
     
-    # 不允许Unsure
+    # Unsure is not allowed
     allow_unsure: false
     
-    # 投票策略
+    # voting strategy
     voting_strategy: "majority"
     
-    # 粗类别模式
+    # coarse category mode
     coarse_mode: "infer"
     bbox_mode: "dino"
     input_mode: "env"
     
-    # 决策模式
+    # decision mode
     decision_mode: "early_exit"
 
 env:

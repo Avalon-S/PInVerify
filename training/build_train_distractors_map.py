@@ -2,16 +2,16 @@
 """
 build_train_distractors_map.py
 -------------------------------
-从原始 PIN 数据集 content_raw 的 .json.gz 文件中提取 distractor 关系。
+Extract distractor relations from the raw PIN dataset content_raw .json.gz files.
 
-每个 episode 有:
+Each episode holds:
   - goals[0]: target object (object_id + object_category)
-  - distractors: 干扰物列表 (object_id + object_category)
+  - distractors: list of distractor objects (object_id + object_category)
 
-本脚本扫描所有 episode，为每个 target object 收集全部 distractors 并去重。
-输出格式与 val 的 object_goal_distractors_map.json 完全一致。
+This script scans every episode and collects the deduplicated distractor set per target object.
+The output format matches val/object_goal_distractors_map.json exactly.
 
-用法:
+Usage:
     python training/build_train_distractors_map.py \
         --src ./data/data/datasets/pin/hm3d/v1/train/yuanben/content_raw \
         --output ./data/pv_dataset/train/object_goal_distractors_map.json

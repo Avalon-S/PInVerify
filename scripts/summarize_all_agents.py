@@ -30,7 +30,7 @@ def extract_agent_name(dirname: str) -> tuple:
     Extract agent name and mode from directory name.
 
     Examples:
-        multi_view_attr_llm_dino_500 -> (multi_view_attr_llm, dino)
+        multi_view_attr_adaptive_llm_dino_all -> (multi_view_attr_adaptive_llm, dino)
         single_view_direct_gt_500 -> (single_view_direct, gt)
     """
     parts = dirname.rsplit('_', 2)  # Split from right: name, mode, limit
