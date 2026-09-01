@@ -118,7 +118,7 @@ Servers are launched via shell scripts in `scripts/start_multigpu_servers*.sh`. 
 PInVerify uses Hydra/OmegaConf. Every entrypoint takes a `--config` and accepts CLI overrides:
 
 ```bash
-python scripts/evaluate.py --config configs/agent/multi_view_attr_llm.yaml \
+python scripts/evaluate.py --config configs/agent/multi_view_attr_adaptive_llm.yaml \
   dataset.root=./data/pv_dataset \
   method.bbox_mode=dino \
   +start_idx=0 +end_idx=500

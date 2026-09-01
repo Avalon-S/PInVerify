@@ -2,6 +2,7 @@
 # =============================================================================
 # SFT v3 Training — Qwen3-VL-4B LoRA on 4×RTX 3090
 # =============================================================================
+# Environment: pv_train (docs/INSTALL.md #4), not the pv_bench evaluation env.
 # v3 change: neg_same CoT uses concrete attribute comparison
 # (single controlled variable vs v2)
 #

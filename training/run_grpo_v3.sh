@@ -2,6 +2,7 @@
 # =============================================================================
 # GRPO v3 Training — Qwen3-VL-4B LoRA on 4×RTX 3090
 # =============================================================================
+# Environment: pv_train (docs/INSTALL.md #4), not the pv_bench evaluation env.
 # GRPO on top of SFT v3 adapter.
 # Uses same RL data as v2 (prompt + solution format unchanged).
 #

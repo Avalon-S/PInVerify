@@ -6,7 +6,7 @@ task_categories:
 language:
   - en
 size_categories:
-  - 1K<n<10K
+  - 10K<n<100K
 source_datasets:
   - extended|other
 tags:
@@ -39,40 +39,59 @@ Embodied agents that navigate to a target object don't always reach the **right 
 
 ## Statistics
 
-| Split | Episodes | Pair types (positive : neg_same : neg_diff) |
-|---|---|---|
-| `val`         | 3,000  | 1,000 : 1,000 : 1,000 |
-| `train_sft`   | ~15K pairs    | balanced |
-| `train_rl`    | ~5K trajectories | balanced |
+| Split | Index file | Pairs | positive : neg_same : neg_diff |
+|---|---|---|---|
+| `val` (test) | `val/pv_index_all.jsonl` | 3,000 | 1,000 : 1,000 : 1,000 |
+| `train_sft`  | `train_sft/pv_train_sft_index.jsonl` | 15,225 | 5,075 : 5,075 : 5,075 |
+| `train_rl`   | `train_rl/pv_train_rl_index.jsonl` | 15,225 | 5,075 : 5,075 : 5,075 |
+
+Smaller evaluation subsets ship alongside the full split:
+`pv_index_{50,100,500,1000}.jsonl`. The 50-episode one is the smoke test.
 
 - **18 object categories** (PInNED-inherited)
 - **71 unique evaluation instances** across **35 HM3D scenes**
-- **6 sectors per episode** (far/near rings)
+- **6 sectors per episode**, captured on a far and a near ring
 - Trap-view + unreachable-sector annotations
 
 ## Episode structure
 
-Each episode in `pin_capture/val/<episode_id>/`:
+Captures are grouped by scene, then by episode:
 
 ```
-meta.json              Episode metadata (target_object_id, query_object_id, pair_type, description)
-captures/sector_{0..5}/
-  rgb.png
-  depth.png
-  mask.png
-  gt_bbox.json
+pin_capture/val/<scene_id>/<episode_id>/
+  meta.json              Capture-level metadata (see below)
+  overview.png           Top-down overview of the sector ring
+  rgb/rgb_s<N>_<far|near>.png
+  mask/mask_s<N>_<far|near>.png
 ```
 
-`meta.json` key fields:
+`<N>` is the sector angle index and `far`/`near` is the capture ring, so a
+6-sector episode has up to 12 viewpoints; sectors that were not reachable during
+capture are simply absent.
+
+The verification pair (which instance the description belongs to, and whether it
+matches) lives in the **index jsonl**, not in `meta.json`. One index row:
 
 | Field | Meaning |
 |---|---|
+| `episode_path` | Path to the episode directory, relative to the dataset root |
 | `target_object_id` | Object actually placed in the scene |
-| `query_object_id`  | Object the description corresponds to (`==target` for positives) |
-| `pair_type`        | `positive` / `neg_same` / `neg_diff` |
-| `description`      | Fine-grained instance description |
-| `sector_layout[i].navigable` | Whether sector `i` is reachable |
-| `sector_layout[i].mask_meets_threshold` | False = trap view (navigable but uninformative) |
+| `query_object_id` | Object the description corresponds to (equal to target for positives) |
+| `pair_type` | `positive` / `neg_same` / `neg_diff` |
+| `label` | Ground-truth verification answer |
+| `navigable_sectors` / `valid_start_sectors` | Sector reachability, and legal starting sectors |
+| `n_navigable` / `n_mask_visible` | Reachable sector count, and how many of those actually show the target |
+
+`meta.json` carries the capture geometry: camera intrinsics, per-viewpoint
+`camera_to_world`, sector index and radius, and per-capture
+`mask_meets_threshold`. A capture with `navigable: true` but
+`mask_meets_threshold: false` is a **trap view**: the agent can go there and
+still learn nothing.
+
+Object descriptions are in `object_descriptions_with_category.json`, keyed by
+object id. The `*_cache.json` files are precomputed attribute decompositions,
+category predictions, and merged descriptions, so a run does not have to
+re-query the LLM for them.
 
 ## How to use
 
@@ -85,8 +104,9 @@ For the full evaluation pipeline see [github.com/Avalon-S/PInVerify](https://git
 
 ```bash
 python scripts/evaluate.py \
-  --config configs/agent/multi_view_attr_llm.yaml \
-  dataset.root=./data/pv_dataset
+  --config configs/agent/multi_view_attr_adaptive_llm.yaml \
+  dataset.root=./data/pv_dataset \
+  dataset.index_file=pv_index_50.jsonl
 ```
 
 ## License & attribution

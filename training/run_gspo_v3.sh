@@ -2,6 +2,7 @@
 # =============================================================================
 # GSPO v3 Training — Qwen3-VL-4B LoRA on 4×RTX 3090
 # =============================================================================
+# Environment: pv_train (docs/INSTALL.md #4), not the pv_bench evaluation env.
 # GSPO = GRPO + importance_sampling_level=sequence
 # On top of SFT v3 adapter.
 #

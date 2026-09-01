@@ -1,24 +1,108 @@
 # PInVerify: An Offline Embodied Benchmark for Active Instance Verification
 
+**English** &middot; [简体中文](README_zh.md)
+
 [![Paper](https://img.shields.io/badge/Paper-arXiv%3A2605.30639-red)](https://arxiv.org/abs/2605.30639)
 [![Project Page](https://img.shields.io/badge/Project-Page-blue)](https://avalon-s.github.io/PInVerify)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![FMEA @ CVPR 2026](https://img.shields.io/badge/FMEA-CVPR%202026-blueviolet)](https://foundation-models-meet-embodied-agents.github.io/cvpr2026/)
-[![Status: Preview](https://img.shields.io/badge/status-early%20preview-orange)](#)
-
-> [!NOTE]
-> **Early preview.** The code is uploaded and browsable, but it has **not yet been end-to-end tested in a clean environment**, and the Hugging Face dataset and model weights are **not released yet** (still in preparation). The complete, verified release is planned for the coming weeks. Star or watch the repo to get notified.
 
 Official repository for the FMEA @ CVPR 2026 paper
 **"PInVerify: An Offline Embodied Benchmark for Active Instance Verification."**
 
-PInVerify introduces **Active Instance Verification (AIV)**: the agent has already navigated near a candidate object and must now actively select viewpoints around it to decide whether it matches a fine-grained natural-language description. We provide a 3,000-episode offline benchmark with a 6-sector navigation topology, plus reference training-free and LoRA-fine-tuned MLLM agents.
+Navigation gets an agent to the right *category*. Telling two backpacks apart is a different problem, and it is the one this benchmark isolates: the agent has already arrived next to a candidate, and now has to work out, by choosing where to look from, whether this is the object the description meant.
 
-## Roadmap & Collaboration
+That task is **Active Instance Verification (AIV)**. The benchmark holds 3,000 episodes on a six-sector viewpoint topology. Training-free and LoRA-fine-tuned MLLM agents ship as reference implementations.
 
-PInVerify is an actively developed project, and this is its first public release on the way to a main-conference version. It currently covers about 3/5 of the planned scope, and I am actively extending it. The next milestones are experiments on frontier MLLMs and real-robot testing, which I am pursuing as time and resources allow.
+<p align="center">
+  <img src="project-page/static/images/overview.png" width="92%" alt="Active Instance Verification: the agent arrives near a candidate and must choose viewpoints to decide whether it matches the description">
+</p>
 
-If this direction interests you and you can offer relevant resources (compute, robot hardware, etc.), I am open for collaboration to push it forward faster. Reach out to Yuhang Jiang at [jyhtjtj@gmail.com](mailto:jyhtjtj@gmail.com) · [avalon-s.github.io](https://avalon-s.github.io/).
+## The setup
+
+Each episode places the target inside a ring of pre-rendered viewpoints: six
+angular sectors on a far and a near ring. The agent picks where to look next,
+one step at a time, under a six-step budget. Two things can go wrong that have
+nothing to do with recognition: a sector may be unreachable, or reachable but
+useless because the target is barely visible from it. The benchmark scores both
+as navigation failures rather than hiding them.
+
+<p align="center">
+  <img src="project-page/static/images/sector_topology.png" width="82%" alt="Six angular sectors on a far and a near ring around the target, with trap views and unreachable sectors marked">
+</p>
+
+The reference agent works attribute by attribute. It splits the description,
+checks each attribute against the current view, and keeps a tracker that
+reconciles what different views disagree on. Once the tracker has converged it
+stops, instead of spending the rest of the budget.
+
+<p align="center">
+  <img src="project-page/static/images/method_pipeline.png" width="92%" alt="Pipeline: attribute decomposition, per-view verification, tracker reconciliation, next-best-view selection, adaptive stopping">
+</p>
+
+## What is where
+
+The project ships in three branches. They hold different codebases with
+**mutually incompatible Python environments**, which is why they are separate
+branches rather than directories: one checkout maps to one conda environment,
+so nothing gets installed on top of the wrong stack.
+
+| Branch | Contents | Environment |
+|---|---|---|
+| **`main`** (you are here) | The benchmark: environment, training-free and trained agents, evaluation harness, every config behind the paper's tables | Python 3.10, torch 2.1.2+cu118, transformers 4.52.4, numpy 1.26 |
+| **`data-collection`** | The capture pipeline that built the benchmark from PInNED, specified in Appendix A of the paper: object injection, 6-sector viewpoint capture, mask and reachability annotation, the iterative repair loop, and the render audit of Appendix A.10 | Python 3.9, torch 1.13.1+cu117, habitat 0.2.3, pytorch3d, transformers 4.38.2, numpy 1.23 |
+| **`benchmark-fix`** | Defects found in the upstream PIN benchmark while building this dataset, and the code that detects and repairs them: object penetration, floor-height errors, abnormal-episode triage, goal-view scoring. **Not part of the paper**, so do not look for a corresponding section | Same habitat stack as `data-collection` |
+
+The conflicts are hard ones: torch 1.13 against 2.1 on different CUDA builds
+(cu117 vs cu118), numpy 1.23 against 1.26, and transformers 4.38 against 4.52,
+which Qwen3-VL requires. Keep one conda environment per branch.
+
+Fine-tuning lives in `main` under [`training/`](training/), next to the agents
+it trains; it runs in the `main` environment plus `ms-swift`.
+
+```bash
+git clone https://github.com/Avalon-S/PInVerify.git
+cd PInVerify
+git checkout data-collection    # or: benchmark-fix
+```
+
+`benchmark-fix` is a side product rather than a contribution the paper claims.
+It ships the detection and repair code, not repaired data: PIN's original data
+is public, so the pipeline can be re-run against it.
+
+## Release progress on `main`
+
+The benchmark is released in two stages so the training-free half is usable
+before the trained half is fully uploaded.
+
+### Stage 1: training-free baselines and the test set
+
+| Item | Status |
+|---|---|
+| Environment, tracker, fusion, NBV policies (`pver/`) | Released |
+| Training-free agent configs (Tables 4 and 5) | Released, mapped in [configs/agent/README.md](configs/agent/README.md) |
+| Evaluation harness and multi-GPU runner | Released |
+| VLM / detector servers | Released |
+| 3,000-episode test split + indices + caches | Not yet uploaded |
+| Figure scripts | Released |
+
+### Stage 2: trained baselines and the fine-tuning data
+
+| Item | Status |
+|---|---|
+| SFT / DPO / GRPO / GSPO data prep and training scripts (`training/`) | Released |
+| Trained-agent configs and evaluation entry point | Released |
+| SFT and RL training pools (15,225 pairs each, plus crops) | Not yet uploaded |
+| LoRA checkpoints, 5 variants | Not yet uploaded |
+| Training curves | Not yet uploaded |
+
+Everything marked "not yet uploaded" is a Hugging Face upload driven from the
+capture machine with [`scripts/prepare_hf_release.py`](scripts/prepare_hf_release.py).
+The code paths for all of it are already here and documented.
+
+The code is released as-is from the machine that produced the paper's numbers.
+It has not been re-run end to end in a clean environment, so expect to adjust
+paths and server ports for your own setup.
 
 ---
 
@@ -28,18 +112,20 @@ If this direction interests you and you can offer relevant resources (compute, r
 PInVerify/
 ├── pver/                 Core package: env, policies, tracker, fusion, NBV, eval, viz
 ├── configs/
-│   ├── agent/            21 agent configs covering the paper's evaluation matrix
-│   └── prompts/          9 prompt templates (extract / verify / category / merge / nav)
-├── scripts/              Evaluation entry points, cache builders, figure scripts
+│   ├── agent/            25 agent configs + README mapping each paper table to a config
+│   └── prompts/          10 prompt templates (extract / verify / category / merge / nav)
+├── scripts/              Evaluation entry points, cache builders, figure scripts, HF release
 ├── training/             SFT + DPO/GRPO/GSPO data prep and training shells
-├── servers/              VLM / detector server wrappers (Qwen3-VL, CLIP, SenseNova-SI)
+├── servers/              VLM / detector servers (Qwen3-VL, Grounding DINO, CLIP, SenseNova-SI)
 ├── data/examples/        Tiny episode samples for sanity checks
-├── docs/                 DATASET / EVALUATION / TRAINING / ARCHITECTURE
-├── hf_cards/             Hugging Face dataset + model cards (pre-authored)
+├── docs/                 INSTALL / DATASET / EVALUATION / TRAINING / ARCHITECTURE
+├── hf_cards/             Hugging Face dataset + model cards, and the upload recipe
 ├── project-page/         Static project website (auto-deployed to GitHub Pages)
-├── run_all.sh            Master multi-GPU evaluation runner
+├── run_all.sh            Training-free evaluation runner (reproduces Tables 4 and 5)
 └── runner.py             Batch evaluation harness
 ```
+
+Paths in the configs assume the dataset at `./data/pv_dataset` and model weights at `./models/<name>`. Both can be overridden per run on the command line.
 
 ---
 
@@ -50,64 +136,100 @@ PInVerify/
 ```bash
 git clone https://github.com/Avalon-S/PInVerify.git
 cd PInVerify
+
+conda create -n pv_bench python=3.10 -y
+conda activate pv_bench
 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu118
 ```
 
-Optional external dependencies (install if you intend to use the corresponding baseline):
+That covers the Qwen3-VL agents and the embedding baselines. Three pieces are
+installed separately, and **[docs/INSTALL.md](docs/INSTALL.md) has the full
+procedure**, including the CUDA-version constraint that trips up the first one:
 
-- **Grounding DINO**: clone and install from [IDEA-Research/GroundingDINO](https://github.com/IDEA-Research/GroundingDINO). PInVerify calls it through `servers/run_qwen_batched.py` via an HTTP wrapper.
-- **SenseNova-SI**: clone [OpenSenseNova/SenseNova-SI](https://github.com/OpenSenseNova/SenseNova-SI) into `./SenseNova-SI` (or set `SENSENOVA_PATH=<dir>`).
-- **ms-swift**: required for LoRA training; install via `pip install ms-swift`.
+- **Grounding DINO**, needed for `method.bbox_mode=dino` (the main tables). It compiles a CUDA extension that must match torch's CUDA build, and `servers/run_groundingdino_server.py` runs from inside its checkout.
+- **SenseNova-SI**, only for one row of Table 5. It needs its own `sensenova` environment (Python 3.11, torch 2.5.1+cu121, numpy 2.x), which cannot coexist with `pv_bench`.
+- **ms-swift**, only if you re-train. It needs a newer transformers than `requirements.txt` pins, so it goes in a separate `pv_train` environment (torch 2.2.0, transformers 4.57.0). Adapters are still *evaluated* in `pv_bench`.
 
 ### 2. Download the dataset
 
-> **TODO:** the dataset has not been uploaded to Hugging Face yet. Download instructions will be added here once it is public.
+> Stage 1 upload, not yet public. The dataset is assembled on the capture machine and pushed from there; this section will carry the download command once the repo is up.
 
-Expected directory layout once released:
+Expected layout once released:
 
 ```
 data/pv_dataset/
-├── pin_capture/          6-sector multi-view captures (val + train_sft + train_rl)
-├── image_gt/             Ground-truth bounding-box masks
-├── train_sft/            SFT training jsonl + cached crops
-├── train_rl/             RL training trajectories
-├── category_cache.json
+├── pin_capture/
+│   ├── val/<scene>/<episode>/{meta.json, rgb/, mask/, overview.png}
+│   ├── train_sft/...
+│   └── train_rl/...
+├── image_gt/<category>/       Ground-truth bounding-box masks
+├── val/pv_index_{50,100,500,1000,all}.jsonl
+├── train_sft/{pv_train_sft_index.jsonl, sft_data_v2.jsonl, sft_data_v3.jsonl, crops/, crops_v3/}
+├── train_rl/{pv_train_rl_index.jsonl, rl_data_v2.jsonl, dpo_data_v3.jsonl, crops_rl/, crops_dpo/}
 ├── attr_cache.json
+├── category_cache.json
 ├── merge_cache.json
 └── object_descriptions_with_category.json
 ```
 
-See [docs/DATASET.md](docs/DATASET.md) for the full data spec.
+`pv_index_all.jsonl` is the 3,000-episode test split used for every number in the paper. See [docs/DATASET.md](docs/DATASET.md) for the full spec.
+
+Publishing it (run this on the machine that holds the captures, not on a copy):
+
+```bash
+python scripts/prepare_hf_release.py check  --data-root <dataset root>
+python scripts/prepare_hf_release.py upload --data-root <dataset root> \
+    --repo Avalon-S/PInVerify --card hf_cards/dataset_card.md
+```
+
+`check` walks every split index and refuses to publish a partial copy.
 
 ### 3. (Optional) Download trained checkpoints
 
-Each fine-tuned variant will live in its own Hugging Face model repository. Overall accuracy (Grounding DINO detection) is shown for both training-data variants (Generic-CoT used in the paper's main Table 6, Specific-CoT in Appendix F):
+Every adapter the paper reports lives in one model repository,
+`Avalon-S/PInVerify-Qwen3VL-4B`, under subdirectories. Overall accuracy on the
+3,000-episode test split, positive-pair accuracy in parentheses:
 
-| Variant | HF Repo | Generic-CoT | Specific-CoT |
-|---|---|---|---|
-| SFT              | TODO | 84.8     | 85.8     |
-| SFT + DPO-200    | TODO | —        | 85.9     |
-| SFT + DPO-400    | TODO | —        | **86.0** |
-| SFT + GRPO       | TODO | 85.3     | 85.5     |
-| **SFT + GSPO** ⭐ | TODO | **85.6** | 85.1     |
+| Adapter | DINO | GT |
+|---|---|---|
+| *(base model, no fine-tuning)* | 0.706 (0.146) | 0.710 (0.161) |
+| `generic-cot/sft` | 0.848 (0.759) | 0.877 (0.828) |
+| `generic-cot/grpo` | 0.853 (0.736) | 0.887 (0.806) |
+| **`generic-cot/gspo`** | **0.856** (0.745) | **0.889** (0.813) |
+| `specific-cot/sft` | 0.858 (0.697) | 0.884 (0.761) |
+| `specific-cot/dpo-200` | 0.859 (0.700) | 0.881 (0.756) |
+| `specific-cot/dpo-400` | 0.860 (0.665) | 0.884 (0.729) |
+| `specific-cot/grpo` | 0.855 (0.793) | 0.884 (0.847) |
+| `specific-cot/gspo` | 0.851 (0.796) | 0.889 (0.813) |
 
-> **TODO:** model repositories are not yet uploaded. Links will be added here once the checkpoints are public.
+`generic-cot/*` is the paper's main table (Table 6); `specific-cot/*` is the
+Appendix F variant, differing only in how the SFT chain-of-thought was written.
+`generic-cot/gspo` is the headline result. The 95% CI is about ±1.3 pp, so most
+differences between fine-tuned variants are within noise; the gap that matters is
+against the un-tuned base model, which nearly always answers "no match".
 
-⭐ marks the paper's headline result. Best in each column is bolded.
+```bash
+huggingface-cli download Avalon-S/PInVerify-Qwen3VL-4B     --include "generic-cot/gspo/*" --local-dir ./models/pinverify
+```
+
+Not uploaded yet; this section becomes live once the repo is public.
 
 ### 4. Run one configuration on the 50-episode smoke split
 
 ```bash
-# Start a single Qwen3-VL-4B server (one GPU)
-python servers/run_qwen3_server.py --port 12182 --model ./models/Qwen3-VL-4B-Instruct
+# Start a single Qwen3-VL-4B server (one GPU).
+# The model path is the MODEL_PATH constant at the top of the script; the
+# batched server used by the multi-GPU launchers takes --model instead.
+python servers/run_qwen3_server.py --port 12182
 
-# In another shell: run MV-Attr+LLM-NBV on 50 episodes
+# In another shell: run MV-Attr+LLM-NBV on 50 episodes with GT boxes
 python scripts/evaluate.py \
-  --config configs/agent/multi_view_attr_llm.yaml \
-  +start_idx=0 +end_idx=50 \
-  dataset.index_file=pv_index_sectors6_50.jsonl \
+  --config configs/agent/multi_view_attr_adaptive_llm.yaml \
+  dataset.index_file=pv_index_50.jsonl \
   method.bbox_mode=gt
 ```
+
+`method.bbox_mode=dino` additionally needs a Grounding DINO server on port 12183, started from inside a GroundingDINO checkout with `servers/run_groundingdino_server.py` (setup steps are in that file's docstring).
 
 Results land in `./outputs/<run_name>/metrics.json`.
 
@@ -115,42 +237,74 @@ Results land in `./outputs/<run_name>/metrics.json`.
 
 ## Reproducing the Paper Results
 
-> Reproduction needs the dataset (and, for the trained-agent table, the model weights), which are not on Hugging Face yet. The commands below are the intended entry points and will be runnable once those land.
+Reproduction needs the dataset, and the trained-agent table also needs the model weights, so it is blocked until both are published. The commands below are the intended entry points.
 
-### Main training-free table (Table 5)
+Which config produces which table row is documented in **[configs/agent/README.md](configs/agent/README.md)**, together with the expected accuracy for each row.
 
-```bash
-# 4-GPU dynamic evaluation across all 18 training-free configs × {GT, DINO}
-bash run_all.sh 3000   # full 3,000-episode split (~74 GPU-hours total)
-```
-
-Aggregation:
+### Table 4: training-free main table
 
 ```bash
-python scripts/summarize_all_agents.py --root ./outputs/sectors6_3000
-python scripts/compare_metrics.py --root ./outputs/sectors6_3000
+# 4-GPU dynamic evaluation over the 9 training-free configs, DINO detection
+bash scripts/start_multigpu_servers.sh 4
+bash run_all.sh                      # full 3,000-episode split
+bash run_all.sh 50                   # smoke split
+
+BBOX_MODES=gt bash run_all.sh        # the GT-box ablations of Sec. 6.4
 ```
 
-### Trained agent table (Table 6)
+Aggregation (`compare_metrics.py` takes the directories as positional arguments):
+
+```bash
+python scripts/summarize_all_agents.py --output_base ./outputs/main_all
+python scripts/compare_metrics.py ./outputs/main_all --breakdown
+python scripts/compare_metrics.py ./outputs/main_all --csv table4.csv
+```
+
+### Table 5: cross-model comparison
+
+```bash
+# CLIP / SigLIP2 embedding baselines (plus the appendix sweep)
+AGENT_SET=embedding bash run_all.sh
+
+# Qwen3-VL-8B: same configs, server pointed at the 8B weights
+# SenseNova-SI: bash scripts/start_multigpu_servers_sensenova.sh 4
+```
+
+### Table 6: trained agents
 
 ```bash
 # Re-train (skip if using released checkpoints)
-bash training/run_sft_v3.sh
-bash training/run_gspo_v3.sh
+bash training/run_sft.sh             # Generic-CoT SFT, the paper's main rows
+bash training/run_gspo.sh            # SFT + GSPO, the headline result
 
-# Evaluate trained models
-bash scripts/eval_trained.sh sft_v3
-bash scripts/eval_trained.sh gspo_v3
+# Evaluate a trained adapter
+ADAPTER=./outputs/training/gspo_v2_from_sft bash scripts/start_multigpu_servers_lora.sh 4
+bash scripts/eval_trained.sh gspo_v2
 ```
+
+The `*_v3.sh` scripts train the Specific-CoT variant reported in Appendix F. See [docs/TRAINING.md](docs/TRAINING.md) for the difference.
 
 ### Paper figures
 
+These scripts read run outputs from paths hardcoded at the top of each file
+(`./outputs/qwen3_vl_4b/...` for training-free runs, `./outputs/trained/...` for
+trained ones). Either edit those constants, or produce the runs where the
+scripts expect them:
+
 ```bash
-python scripts/generate_report_figs.py     # main plots
-python scripts/plot_per_category.py        # per-category accuracy
-python scripts/plot_nbv_polar_dino.py      # NBV direction polar plots
-python scripts/plot_case_study.py          # qualitative case studies
+OUT_BASE=./outputs/qwen3_vl_4b SAVE_VIZ=true bash run_all.sh
 ```
+
+`SAVE_VIZ=true` writes a per-episode `episode.json`, which the NBV and case-study
+plots parse. It costs disk but changes no metric.
+
+```bash
+python scripts/plot_per_category.py        # per-category accuracy (reads metrics.json)
+python scripts/plot_nbv_polar_dino.py      # NBV direction polar plots (reads episode.json)
+python scripts/plot_case_study.py          # qualitative case studies (reads one episode.json)
+python scripts/plot_dataset_overview.py    # dataset statistics (reads the dataset directly)
+```
+
 
 See [docs/EVALUATION.md](docs/EVALUATION.md) and [docs/TRAINING.md](docs/TRAINING.md) for the full reproduction guide.
 
