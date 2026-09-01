@@ -2,6 +2,7 @@
 # =============================================================================
 # DPO Training — Qwen3-VL-4B LoRA on 4×RTX 3090
 # =============================================================================
+# Environment: pv_train (docs/INSTALL.md #4), not the pv_bench evaluation env.
 # DPO on top of SFT v3 adapter.
 # Uses preference pairs (chosen/rejected) — no online generation needed.
 # Training speed similar to SFT (~1.5x due to reference model forward pass).
@@ -15,7 +16,7 @@ set -e
 MODEL_PATH="./models/Qwen3-VL-4B-Instruct"
 DATASET="./data/pv_dataset/train_rl/dpo_data_v3.jsonl"
 SFT_ADAPTER="./outputs/training/sft/best_adapter"
-OUTPUT_DIR="./data/dpo_v3_output"
+OUTPUT_DIR="./outputs/training/dpo"
 
 if [ ! -d "$SFT_ADAPTER" ]; then
     echo "ERROR: SFT v3 adapter not found at $SFT_ADAPTER"
