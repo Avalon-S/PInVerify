@@ -133,21 +133,28 @@ chosen navigation direction lands on a sector the metadata marks visible, and a
 per-step penalty that pushes the agent to stop. See `training/reward.py`.
 
 Reproduce with `training/run_sft.sh` then `training/run_gspo.sh` for the Generic
-family, or the `*_v3.sh` scripts for Specific. Each adapter directory here keeps
-its `args.json`, so the exact configuration is recoverable.
+family, or the `*_v3.sh` scripts for Specific. Each adapter directory keeps its
+`args.json` and `trainer_state.json`, so the run configuration and the loss curve
+are both recoverable.
+
+Two edits were made on the way here. Absolute paths from the training machine
+were rewritten to their repository-relative equivalents, in `args.json` and in
+`adapter_config.json`, where `base_model_name_or_path` would otherwise point at a
+directory that exists on no other machine. And `training_args.bin`, a pickle that
+duplicates `args.json`, was dropped along with the `README.md` that peft
+generates.
 
 ## Citation
 
 ```bibtex
-@inproceedings{jiang2026pinverify,
-  title         = {PInVerify: An Offline Embodied Benchmark for Active Instance Verification},
-  author        = {Jiang, Yuhang},
-  booktitle     = {Foundation Models Meet Embodied Agents (FMEA) Workshop at CVPR},
-  year          = {2026},
-  note          = {Poster},
-  eprint        = {2605.30639},
-  archivePrefix = {arXiv},
-  primaryClass  = {cs.CV}
+@misc{jiang2026pinverifyofflineembodiedbenchmark,
+      title={PInVerify: An Offline Embodied Benchmark for Active Instance Verification},
+      author={Yuhang Jiang},
+      year={2026},
+      eprint={2605.30639},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2605.30639},
 }
 ```
 
