@@ -42,6 +42,9 @@ Expected layout under --data-root:
 """
 
 import argparse
+import io
+import shutil
+import tempfile
 import json
 import os
 import sys
@@ -251,7 +254,8 @@ def cmd_upload(args):
         api.upload_file(path_or_fileobj=args.card, path_in_repo="README.md",
                         repo_id=repo, repo_type="dataset")
 
-    ignore = ["*.pyc", "__pycache__/*", ".ipynb_checkpoints/*"]
+    ignore = ["*.pyc", "__pycache__/*", "*/__pycache__/*",
+              ".ipynb_checkpoints/*", "*/.ipynb_checkpoints/*"]
     if args.splits == "val":
         # Stage 1: test split only. Skip the training side even if partially present.
         ignore += ["pin_capture/train*/**", "train_sft/**", "train_rl/**"]
@@ -265,6 +269,31 @@ def cmd_upload(args):
 
 
 ADAPTER_FILES = ['adapter_model.safetensors', 'adapter_config.json']
+
+# The base model as the Hub knows it. Training used a local checkout, so every
+# adapter records that local path instead; publishing it verbatim would give
+# everyone a config pointing at a directory only the training machine has.
+PORTABLE_BASE = 'Qwen/Qwen3-VL-4B-Instruct'
+
+# Rewritten inside adapter_config.json and args.json, longest prefix first.
+PATH_REWRITES = [
+    ('/root/autodl-tmp/huggingface/Qwen3-VL-4B-Instruct', PORTABLE_BASE),
+    ('/root/autodl-tmp/pv_dataset', './data/pv_dataset'),
+    ('/root/autodl-tmp/', './outputs/training/'),
+]
+
+# peft writes a README.md whose front matter repeats the local base-model path;
+# the repository already has a card, and the Hub refuses that metadata anyway.
+# training_args.bin is a pickle that duplicates args.json and carries the same
+# paths, with no way to rewrite them cleanly.
+ADAPTER_SKIP = ['README.md', 'training_args.bin']
+
+
+def make_portable(text):
+    """Replace training-machine paths with the published equivalents."""
+    for old, new in PATH_REWRITES:
+        text = text.replace(old, new)
+    return text
 
 
 def cmd_upload_model(args):
@@ -280,9 +309,9 @@ def cmd_upload_model(args):
         print('Point --adapter at the checkpoint itself, e.g. .../checkpoint-500')
         return 1
 
-    # the sibling metadata is what makes the release reproducible
-    extras = [f for f in ('args.json', 'additional_config.json', 'trainer_state.json',
-                          'training_args.bin', 'README.md')
+    # args.json and trainer_state.json are what make the release reproducible;
+    # ADAPTER_SKIP names the ones that are dropped instead of published
+    extras = [f for f in ('args.json', 'additional_config.json', 'trainer_state.json')
               if os.path.isfile(os.path.join(d, f))]
     size = sum(os.path.getsize(os.path.join(d, f)) for f in os.listdir(d)
                if os.path.isfile(os.path.join(d, f)))
@@ -320,10 +349,36 @@ def cmd_upload_model(args):
         api.upload_file(path_or_fileobj=args.card, path_in_repo='README.md',
                         repo_id=args.repo, repo_type='model')
 
-    print('Uploading adapter')
-    api.upload_folder(folder_path=d, repo_id=args.repo, repo_type='model',
-                      ignore_patterns=['*.pyc', '__pycache__/*', 'images/*'],
-                      commit_message=args.message)
+    stage = tempfile.mkdtemp(prefix='pv_adapter_')
+    try:
+        rewritten = []
+        for name in sorted(os.listdir(d)):
+            src = os.path.join(d, name)
+            if not os.path.isfile(src) or name in ADAPTER_SKIP:
+                continue
+            dst = os.path.join(stage, name)
+            if name.endswith('.json'):
+                with io.open(src, encoding='utf-8') as fh:
+                    text = fh.read()
+                fixed = make_portable(text)
+                if fixed != text:
+                    rewritten.append(name)
+                with io.open(dst, 'w', encoding='utf-8', newline='\n') as fh:
+                    fh.write(fixed)
+            else:
+                shutil.copy2(src, dst)
+
+        print('  skipped:   %s' % ', '.join(
+            n for n in ADAPTER_SKIP if os.path.isfile(os.path.join(d, n))))
+        print('  rewritten: %s' % (', '.join(rewritten) if rewritten else 'none'))
+
+        print('Uploading adapter to %s' % (args.path_in_repo or '<repo root>'))
+        api.upload_folder(folder_path=stage, repo_id=args.repo, repo_type='model',
+                          path_in_repo=args.path_in_repo,
+                          ignore_patterns=['*.pyc', '__pycache__/*', 'images/*'],
+                          commit_message=args.message)
+    finally:
+        shutil.rmtree(stage, ignore_errors=True)
     print('\nDone: https://huggingface.co/%s' % args.repo)
     return 0
 
