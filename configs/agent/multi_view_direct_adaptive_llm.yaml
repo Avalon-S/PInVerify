@@ -1,0 +1,55 @@
+# Multi-View Direct Query Agent (Adaptive Stopping, LLM NBV)
+# Adaptive stopping: the 3 description sentences count as 3 attributes; per-attribute majority vote plus convergence check, up to 6 steps
+# NBV: the LLM picks the next viewpoint from what it has seen and what is still missing
+
+prompt:
+    version: multi_view_direct
+    extract_file: null
+    verify_file: "verify_v1.yaml"
+    nav_file: "nav_direct_v1.yaml"
+    category_file: "category_v1.yaml"
+
+method:
+    name: "mllm"
+    agent_type: "multi_view_direct_adaptive_llm"
+
+    use_attribute_decomposition: false
+    query_mode: "direct"
+    allow_unsure: false
+    coarse_mode: "infer"
+    bbox_mode: "dino"
+    input_mode: "env"
+    decision_mode: "vote_till_end"
+
+    # --- Modular Config ---
+    fusion:
+      type: "attr_majority"   # Per-attribute majority vote; any Contradicted → No
+
+    nbv:
+      type: "llm"
+
+env:
+    max_steps: 6              # Full 6-sector budget; adaptive stop kicks in earlier
+    sectors: 6
+    view_priority: "far"
+
+dataset:
+    root: "./data/pv_dataset"
+    capture_subdir: "pin_capture"
+    image_gt_root: "./data/pv_dataset/image_gt"
+    category_cache_path: "./data/pv_dataset/category_cache.json"
+    split: "val"
+    index_file: "pv_index_50.jsonl"
+    desc_db: "./data/pv_dataset/object_descriptions_with_category.json"
+
+output:
+    root: "./outputs/multi_view_direct_adaptive_llm"
+    save_viz: true
+
+server:
+    qwen_text_url: "http://127.0.0.1:12182/qwen-text"
+    qwen_vl_url: "http://127.0.0.1:12182/qwen-vl"
+    gdino_url: "http://127.0.0.1:12183/groundingdino"
+
+evaluation:
+    unsure_as_negative: true

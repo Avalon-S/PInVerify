@@ -1,0 +1,55 @@
+﻿# Single-View Merged Description Agent
+# The text model merges the three sentences into one, then the VL model answers Yes/No directly
+# Cheaper than single_view_direct: only one VL call
+
+prompt:
+    version: single_view_merged
+    merge_file: "merge_v1.yaml"       # prompt that merges the three sentences
+    verify_file: "verify_merged.yaml" # verification prompt that returns JSON with a reason
+    category_file: "category_v1.yaml" # coarse category classification
+    extract_file: null                # no attribute decomposition
+    nav_file: null                    # single view needs no navigation
+
+method:
+    name: "mllm"
+    agent_type: "single_view_merged"
+    
+    # no attribute decomposition
+    use_attribute_decomposition: false
+    
+    # merge mode: combine the descriptions first, then verify
+    query_mode: "merged"
+    
+    # coarse category mode
+    coarse_mode: "infer"
+    bbox_mode: "dino"
+    input_mode: "env"
+    
+    # decision mode
+    decision_mode: "early_exit"
+
+env:
+    max_steps: 1
+    sectors: 6
+    view_priority: "far"
+
+dataset:
+    root: "./data/pv_dataset"
+    capture_subdir: "pin_capture"
+    image_gt_root: "./data/pv_dataset/image_gt"
+    category_cache_path: "./data/pv_dataset/category_cache.json"
+    split: "val"
+    index_file: "pv_index_50.jsonl"
+    desc_db: "./data/pv_dataset/object_descriptions_with_category.json"
+
+output:
+    root: "./outputs/single_view_merged"
+    save_viz: true
+
+server:
+    qwen_text_url: "http://127.0.0.1:12182/qwen-text"
+    qwen_vl_url: "http://127.0.0.1:12182/qwen-vl"
+    gdino_url: "http://127.0.0.1:12183/groundingdino"
+
+evaluation:
+    unsure_as_negative: true

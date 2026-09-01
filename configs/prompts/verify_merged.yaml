@@ -1,0 +1,25 @@
+# Verify Prompt for Single-View Merged Agent
+# 专用于融合描述后的单视角验证，要求输出理由
+
+# 用于融合描述后的验证（merged模式专用）
+direct_template: |
+  You will be given an image of a candidate object.
+  Task: Does this image show the described target item?
+  
+  Object Category: {object_category}
+  Target description: {desc}
+  
+  Answer in JSON format:
+  {{"answer": "Yes/No/Unsure", "reason": "brief explanation"}}
+  
+  RULES:
+  - Say "Yes" if the object MOSTLY matches the description
+    - Minor details may be occluded or not visible from this angle
+    - Focus on the MAIN characteristics (category, color, key features)
+  - Say "No" ONLY if there is CLEAR CONTRADICTING evidence
+    - e.g., description says "red" but object is clearly "blue"
+    - e.g., description says "laptop" but image shows a "phone"
+  - Say "Unsure" if you genuinely cannot determine
+  
+  Important: A single viewpoint may not show ALL described features.
+  If you see the correct category and no contradicting evidence, lean towards "Yes".
